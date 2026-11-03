@@ -6,17 +6,13 @@ import {
   House,
   FileText,
   CalendarDays,
-  List,
   MessageCircle,
-  Star,
   UserRound,
   Settings,
   Bell,
   Search,
-  ArrowUpRight,
   ChevronDown,
   LogOut,
-  Folder,
 } from "lucide-react";
 import { db, result } from "./lib/supabase";
 import {

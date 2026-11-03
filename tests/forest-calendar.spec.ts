@@ -77,7 +77,7 @@ for (const width of [1440, 390])
           if (req.method() === "POST")
             notes.push({
               ...req.postDataJSON(),
-              id: "n3",
+              id: "n" + (notes.length + 1),
               created_at: today.toISOString(),
               updated_at: today.toISOString(),
             });
@@ -109,6 +109,26 @@ for (const width of [1440, 390])
       fullPage: true,
       animations: "disabled",
     });
+    await page
+      .getByRole("button", { name: "Новая заметка", exact: true })
+      .click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    expect(
+      await page
+        .locator(".overlay")
+        .evaluate((el) => el.parentElement === document.body),
+    ).toBeTruthy();
+    await page
+      .getByLabel("Название", { exact: true })
+      .fill("Заметка с главной");
+    await page
+      .getByLabel("Текст", { exact: true })
+      .fill("Окно находится над всеми карточками.");
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Сохранить", exact: true })
+      .click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
     await page.goto("/#calendar");
     await expect(page.locator(".month-grid .day-cell")).toHaveCount(42);
     await expect(

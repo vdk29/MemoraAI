@@ -9,7 +9,6 @@ import {
   PenLine,
   Plus,
   Bookmark,
-  Folder,
 } from "lucide-react";
 import { db, result } from "../lib/supabase";
 import { Avatar, Empty } from "../components/ui";
@@ -101,15 +100,13 @@ export function Dashboard({ data, own, shared }: any) {
               setBusy(true);
               await shared.run(async () => {
                 await result(
-                  db
-                    .from("notes")
-                    .insert({
-                      user_id: shared.userId,
-                      title: text.trim().split("\n")[0].slice(0, 200),
-                      content: text.trim(),
-                      tags: [],
-                      favorite: false,
-                    }),
+                  db.from("notes").insert({
+                    user_id: shared.userId,
+                    title: text.trim().split("\n")[0].slice(0, 200),
+                    content: text.trim(),
+                    tags: [],
+                    favorite: false,
+                  }),
                 );
                 setText("");
                 setSaved(true);

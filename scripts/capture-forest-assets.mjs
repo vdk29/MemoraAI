@@ -83,7 +83,10 @@ await page.screenshot({
   path: "video-assets/development/forest-note-editor-vertical-fixture.png",
   fullPage: true,
 });
-await page.getByRole("button", { name: "Сохранить", exact: true }).click();
+await page
+  .getByRole("dialog")
+  .getByRole("button", { name: "Сохранить", exact: true })
+  .click();
 await page.getByRole("heading", { name: "Идеи для спокойного утра" }).waitFor();
 await page.getByRole("button", { name: "Избранное", exact: true }).click();
 await page.screenshot({

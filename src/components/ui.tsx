@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { X, FileText } from "lucide-react";
 import { db, result } from "../lib/supabase";
 export function Empty({
@@ -58,7 +59,7 @@ export function Modal({
       old?.focus();
     };
   }, []);
-  return (
+  return createPortal(
     <div className="overlay">
       <section
         role="dialog"
@@ -74,7 +75,8 @@ export function Modal({
         </header>
         {children}
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 }
 export function Avatar({ profile }: { profile: any }) {

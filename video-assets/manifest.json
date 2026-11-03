@@ -52,9 +52,14 @@
       "sha256": "6717034c15c85a41a13ea10fcb8d2d79af80e17a19efeceb030be97172e4d6c4"
     },
     {
+      "path": "after/forest-calendar-vertical-fixture.png",
+      "bytes": 59366,
+      "sha256": "e533521f2fba3a2b1adb65c960be56d1900880a7e8def3472aa08825da4e8c38"
+    },
+    {
       "path": "after/forest-dashboard-1440-fixture.png",
-      "bytes": 250960,
-      "sha256": "08e6681c8c2814a4f0ef6ce5406fd31921f0fc1a5a6e5318c69f48ad3fc901c7"
+      "bytes": 250928,
+      "sha256": "2020d64871b6249f53daa58b1a6ee641e5cdbfdd261292d5698d8cf68a4c65e5"
     },
     {
       "path": "after/forest-dashboard-390-fixture.png",
@@ -63,13 +68,18 @@
     },
     {
       "path": "after/forest-home-vertical-fixture.png",
-      "bytes": 151348,
-      "sha256": "b3681d4a793dad5e13dba8a4bb7ec03384c57909922e89358ce5704dd4dff1dd"
+      "bytes": 155323,
+      "sha256": "95befdea8d9fba83e1058acf12e4a818477fe7c37d171ad941d1c03b308fb0f0"
+    },
+    {
+      "path": "after/forest-home-with-note-vertical-fixture.png",
+      "bytes": 139595,
+      "sha256": "65055f40505b17771369f1a44cce2020f51096f1e0d3513580e5f5879aaf1dda"
     },
     {
       "path": "after/forest-note-expanded-1440-fixture.png",
-      "bytes": 182989,
-      "sha256": "3d0e1c59150a152c0571a90ff9d6b5a29302205fad6f283c5f1c4cbad4823986"
+      "bytes": 165399,
+      "sha256": "de7338c43cd9f42ab0c8549ef17d890150637cbdc556bf235deb6453cff27cef"
     },
     {
       "path": "after/forest-note-expanded-390-fixture.png",
@@ -137,19 +147,19 @@
       "sha256": "7af02246678f52aa0c582ce14917617b29d00ba876676160cb93cc8f2a44c82f"
     },
     {
+      "path": "clips/forest-note-create-favorite-calendar-fixture.webm",
+      "bytes": 791826,
+      "sha256": "98d2d50fca81d424f45d39d2ccf3878ba62c7414dc7e73d4a293bcf671446659"
+    },
+    {
       "path": "clips/note-create-favorite-calendar-fixture.webm",
       "bytes": 407333,
       "sha256": "017e46e053e42e1a37d567dca6daa34538a15edae9d3ff0d0d1fdeb8d89dc8d7"
     },
     {
-      "path": "clips/page@4193d6eec02037ca82528789468e20f0.webm",
-      "bytes": 262144,
-      "sha256": "f9029bb177de51da5e8a2e3eb8a987838e58fdf5ecbf1ede641b94f4072b16ae"
-    },
-    {
       "path": "development/forest-note-editor-vertical-fixture.png",
-      "bytes": 139038,
-      "sha256": "c6c34ebff25d3ac1355552fe19f65892758e4162bd6b7f41b1cd65edaada6e85"
+      "bytes": 94309,
+      "sha256": "832710560f78bfba7b006f7297731b331da398ca19b64a23c73e753c6b23239e"
     },
     {
       "path": "development/milestones.md",
