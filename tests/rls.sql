@@ -14,9 +14,12 @@ insert into public.conversations(id,user_a,user_b) values('40000000-0000-4000-80
 insert into public.messages(conversation_id,sender_id,body) values('40000000-0000-4000-8000-000000000001',auth.uid(),'Hello');
 do $$ begin if (select count(*) from public.messages)<>1 then raise exception 'message missing';end if;end $$;
 select set_config('request.jwt.claims','{"sub":"10000000-0000-4000-8000-000000000003","role":"authenticated"}',true);
-do $$ begin if exists(select 1 from public.messages) or exists(select 1 from public.conversations) or exists(select 1 from public.notifications) then raise exception 'private social data leaked';end if;begin insert into public.messages(conversation_id,sender_id,body) values('40000000-0000-4000-8000-000000000001',auth.uid(),'attack');raise exception 'outsider sent';exception when insufficient_privilege then null;end;end $$;
+do $$ begin if exists(select 1 from public.conversation_summaries()) or exists(select 1 from public.messages) or exists(select 1 from public.conversations) or exists(select 1 from public.notifications) then raise exception 'private social data leaked';end if;begin insert into public.messages(conversation_id,sender_id,body) values('40000000-0000-4000-8000-000000000001',auth.uid(),'attack');raise exception 'outsider sent';exception when insufficient_privilege then null;end;end $$;
 select set_config('request.jwt.claims','{"sub":"10000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
 do $$ begin if (select bio from public.profiles where id=auth.uid())<>'' then raise exception 'profile modified';end if;if (select count(*) from public.notifications where kind='friend_accepted')<>1 then raise exception 'accept notification missing';end if;if (select count(*) from public.notifications where kind='message')<>1 then raise exception 'message notification missing';end if;end $$;
+do $$ begin if (select unread from public.conversation_summaries() where conversation_id='40000000-0000-4000-8000-000000000001')<>1 then raise exception 'unread count incorrect';end if;end $$;
+insert into public.read_receipts(conversation_id,user_id,read_at) values('40000000-0000-4000-8000-000000000001',auth.uid(),now());
+do $$ begin if (select unread from public.conversation_summaries() where conversation_id='40000000-0000-4000-8000-000000000001')<>0 then raise exception 'read receipt ignored';end if;end $$;
 update public.notes set title='edited' where user_id=auth.uid();
 delete from public.notes where user_id=auth.uid();
 rollback;

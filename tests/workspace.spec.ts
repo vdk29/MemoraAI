@@ -55,6 +55,9 @@ for (const width of [1440, 390])
               updated_at: new Date().toISOString(),
             });
           }
+          if (req.method() === "PATCH")
+            notes = notes.map((n) => ({ ...n, ...req.postDataJSON() }));
+          if (req.method() === "DELETE") notes = [];
           data = notes;
         }
         await route.fulfill({
@@ -91,6 +94,22 @@ for (const width of [1440, 390])
     await expect(
       page.getByRole("heading", { name: "Проверка редактора" }),
     ).toBeVisible();
+    await page.getByRole("button", { name: "Избранное", exact: true }).click();
+    await expect(
+      page.getByRole("button", { name: "Избранное", exact: true }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await page.getByRole("button", { name: /Проверка редактора/ }).click();
+    await page
+      .getByLabel("Название", { exact: true })
+      .fill("Обновлённая заметка");
+    await page.getByRole("button", { name: "Сохранить", exact: true }).click();
+    await expect(
+      page.getByRole("heading", { name: "Обновлённая заметка" }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: /Обновлённая заметка/ }).click();
+    page.once("dialog", (dialog) => dialog.accept());
+    await page.getByRole("button", { name: "Удалить", exact: true }).click();
+    await expect(page.locator(".note")).toHaveCount(0);
     await page.goto("/#chats");
     await expect(
       page.getByRole("heading", { name: "Люди и переписки" }),

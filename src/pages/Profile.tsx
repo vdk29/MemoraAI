@@ -35,12 +35,10 @@ export function Profile({
               onClick={() =>
                 run(async () => {
                   await result(
-                    db
-                      .from("friendships")
-                      .insert({
-                        requester_id: user.id,
-                        recipient_id: profile.id,
-                      }),
+                    db.from("friendships").insert({
+                      requester_id: user.id,
+                      recipient_id: profile.id,
+                    }),
                   );
                   await refresh();
                 })

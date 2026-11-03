@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { db, result, date } from "../lib/supabase";
+import {
+  mergeMessages,
+  messagePage,
+  sendMessage,
+  type Message,
+} from "../lib/messages";
 import { Avatar, Empty } from "../components/ui";
 export function Social({
   userId,
@@ -13,13 +19,22 @@ export function Social({
   const [query, setQuery] = useState(""),
     [found, setFound] = useState<any[]>([]),
     [active, setActive] = useState<any>(null),
-    [messages, setMessages] = useState<any[]>([]),
+    [messages, setMessages] = useState<Message[]>([]),
     [text, setText] = useState(""),
     [busy, setBusy] = useState(false),
     [status, setStatus] = useState(""),
-    [limit, setLimit] = useState(50);
+    [hasOlder, setHasOlder] = useState(false),
+    [historyBusy, setHistoryBusy] = useState(false);
   const end = useRef<HTMLDivElement>(null),
-    near = useRef(true);
+    near = useRef(true),
+    draft = useRef<{
+      id: string;
+      body: string;
+      conversation_id: string;
+    } | null>(null),
+    list = useRef<HTMLDivElement>(null),
+    currentConversation = useRef<string | undefined>(undefined);
+  currentConversation.current = active?.id;
   const person = (id: string) => profiles.find((p: any) => p.id === id);
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -47,34 +62,38 @@ export function Social({
     if (!active) return;
     let alive = true;
     setMessages([]);
-    const load = async () => {
-      const d = await result(
+    setHasOlder(false);
+    setText("");
+    draft.current = null;
+    near.current = true;
+    const markRead = async () => {
+      const readAt = new Date().toISOString();
+      await result(
         db
-          .from("messages")
-          .select("*")
-          .eq("conversation_id", active.id)
-          .order("created_at", { ascending: false })
-          .limit(limit),
+          .from("read_receipts")
+          .upsert({
+            conversation_id: active.id,
+            user_id: userId,
+            read_at: readAt,
+          }),
       );
-      if (alive) {
-        setMessages((d || []).reverse());
-        await result(
-          db
-            .from("read_receipts")
-            .upsert({
-              conversation_id: active.id,
-              user_id: userId,
-              read_at: new Date().toISOString(),
-            }),
-        );
-        await result(
-          db
-            .from("notifications")
-            .update({ read: true })
-            .eq("reference_id", active.id)
-            .eq("kind", "message"),
-        );
-      }
+      await result(
+        db
+          .from("notifications")
+          .update({ read: true })
+          .eq("reference_id", active.id)
+          .eq("kind", "message")
+          .eq("read", false)
+          .lte("created_at", readAt),
+      );
+      await refresh();
+    };
+    const load = async () => {
+      const rows = await messagePage(active.id);
+      if (!alive) return;
+      setMessages((current) => mergeMessages(current, rows));
+      setHasOlder(rows.length === 50);
+      await markRead();
     };
     run(load);
     const channel = db
@@ -87,16 +106,35 @@ export function Social({
           table: "messages",
           filter: `conversation_id=eq.${active.id}`,
         },
-        () => run(load),
+        (payload) => {
+          if (!alive) return;
+          setMessages((current) =>
+            mergeMessages(current, [payload.new as Message]),
+          );
+          if (document.visibilityState === "visible") run(markRead);
+        },
       )
-      .subscribe((s) =>
-        setStatus(s === "SUBSCRIBED" ? "В реальном времени" : "Подключение…"),
-      );
+      .subscribe((status) => {
+        if (!alive) return;
+        setStatus(
+          status === "SUBSCRIBED"
+            ? "В реальном времени"
+            : status === "CHANNEL_ERROR" || status === "TIMED_OUT"
+              ? "Связь потеряна. Переподключаемся…"
+              : "Подключение…",
+        );
+        if (status === "SUBSCRIBED") run(load);
+      });
+    const onVisible = () => {
+      if (document.visibilityState === "visible") run(load);
+    };
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       alive = false;
+      document.removeEventListener("visibilitychange", onVisible);
       void db.removeChannel(channel);
     };
-  }, [active?.id, limit]);
+  }, [active?.id, userId]);
   useEffect(() => {
     if (near.current) end.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -124,7 +162,6 @@ export function Social({
       await refresh();
     }
     setActive(c);
-    setLimit(50);
   }
   return (
     <div className="social">
@@ -247,25 +284,13 @@ export function Social({
             key={c.id}
             onClick={() => {
               setActive(c);
-              setLimit(50);
             }}
           >
             {person(c.user_a === userId ? c.user_b : c.user_a)?.display_name ||
               "Переписка"}{" "}
-            {notifications.filter(
-              (n: any) =>
-                n.kind === "message" && !n.read && n.reference_id === c.id,
-            ).length > 0 && (
-              <b>
-                {
-                  notifications.filter(
-                    (n: any) =>
-                      n.kind === "message" &&
-                      !n.read &&
-                      n.reference_id === c.id,
-                  ).length
-                }
-              </b>
+            {c.last_body && <small>{c.last_body.slice(0, 80)}</small>}
+            {Number(c.unread) > 0 && (
+              <b aria-label="Непрочитанные">{c.unread}</b>
             )}
           </button>
         ))}
@@ -283,20 +308,39 @@ export function Social({
             </header>
             <div
               className="messages"
+              ref={list}
               onScroll={(e) => {
                 const t = e.currentTarget;
                 near.current =
                   t.scrollHeight - t.scrollTop - t.clientHeight < 100;
               }}
             >
-              {messages.length >= limit && (
+              {hasOlder && (
                 <button
+                  disabled={historyBusy}
                   onClick={() => {
+                    const conversationId = active.id;
                     near.current = false;
-                    setLimit((l) => l + 50);
+                    setHistoryBusy(true);
+                    const height = list.current?.scrollHeight || 0;
+                    run(async () => {
+                      const rows = await messagePage(
+                        conversationId,
+                        messages[0],
+                      );
+                      if (currentConversation.current !== conversationId)
+                        return;
+                      setMessages((current) => mergeMessages(current, rows));
+                      setHasOlder(rows.length === 50);
+                      requestAnimationFrame(() => {
+                        if (list.current)
+                          list.current.scrollTop +=
+                            list.current.scrollHeight - height;
+                      });
+                    }).finally(() => setHistoryBusy(false));
                   }}
                 >
-                  Загрузить предыдущие
+                  {historyBusy ? "Загрузка…" : "Загрузить предыдущие"}
                 </button>
               )}
               {messages.map((m) => (
@@ -317,15 +361,24 @@ export function Social({
                 if (busy || !text.trim()) return;
                 setBusy(true);
                 try {
-                  await result(
-                    db
-                      .from("messages")
-                      .insert({
-                        conversation_id: active.id,
-                        sender_id: userId,
-                        body: text.trim(),
-                      }),
-                  );
+                  if (
+                    !draft.current ||
+                    draft.current.body !== text.trim() ||
+                    draft.current.conversation_id !== active.id
+                  )
+                    draft.current = {
+                      id: crypto.randomUUID(),
+                      body: text.trim(),
+                      conversation_id: active.id,
+                    };
+                  const message = await sendMessage({
+                    ...draft.current,
+                    sender_id: userId,
+                  });
+                  if (currentConversation.current !== message.conversation_id)
+                    return;
+                  setMessages((current) => mergeMessages(current, [message]));
+                  draft.current = null;
                   setText("");
                   near.current = true;
                 } catch (e) {
@@ -340,6 +393,7 @@ export function Social({
                 placeholder="Напишите сообщение…"
                 maxLength={8000}
                 value={text}
+                disabled={busy}
                 onChange={(e) => setText(e.target.value)}
                 required
               />

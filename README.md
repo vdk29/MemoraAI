@@ -11,7 +11,7 @@ Node.js 22.12+ (или 24). `npm ci`, скопировать `.env.example` в `
 
 ## База
 
-Единственный проект: `ewsqrqzabahjtmorrqhh`. Миграция `supabase/migrations/20261103142726_memora_v2.sql` уже применена к нему. Повторно её не выполнять. Старый Supabase не используется и не затронут. Данные не переносились.
+Единственный проект: `ewsqrqzabahjtmorrqhh`. Миграции `supabase/migrations/20261103142726_memora_v2.sql` и `20261103144639_conversation_summaries.sql` уже применены к нему. Повторно их не выполнять. Старый Supabase не используется и не затронут. Данные не переносились.
 
 Схема и доступ описаны в [docs/schema.md](docs/schema.md), результаты проверок и ограничения — в [docs/testing.md](docs/testing.md), исходный аудит — в [docs/audit.md](docs/audit.md).
 

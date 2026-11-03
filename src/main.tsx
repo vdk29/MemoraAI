@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import type { User } from "@supabase/supabase-js";
 import {
@@ -16,6 +16,14 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { db, result } from "./lib/supabase";
+import {
+  workspaceTables,
+  workspacePage,
+  relatedProfiles,
+  appendRows,
+  PAGE_SIZE,
+  type WorkspaceTable,
+} from "./lib/workspace";
 import { Auth } from "./pages/Auth";
 import { Notes } from "./pages/Notes";
 import { Events } from "./pages/Events";
@@ -41,7 +49,12 @@ function App() {
     [data, setData] = useState<any>(null),
     [error, setError] = useState(""),
     [loading, setLoading] = useState(false),
-    [search, setSearch] = useState("");
+    [search, setSearch] = useState(""),
+    [more, setMore] = useState<Record<string, boolean>>({}),
+    [pageBusy, setPageBusy] = useState(false);
+  const requestVersion = useRef(0);
+  const sessionUser = useRef<string | undefined>(undefined);
+  sessionUser.current = user?.id;
   const run = useCallback(async (fn: () => Promise<unknown>) => {
     setError("");
     try {
@@ -75,27 +88,31 @@ function App() {
   }, []);
   const refresh = useCallback(async () => {
     if (!user) return;
-    const tables = [
-      "notes",
-      "categories",
-      "events",
-      "profiles",
-      "friendships",
-      "conversations",
-      "notifications",
-      "settings",
-    ];
+    const version = ++requestVersion.current;
     const rows = await Promise.all(
-      tables.map((t) => {
-        let q = db.from(t).select("*");
-        if (t === "notes") q = q.order("updated_at", { ascending: false });
-        if (t === "events") q = q.order("starts_at");
-        if (t === "notifications")
-          q = q.order("created_at", { ascending: false });
-        return result(q.limit(t === "profiles" ? 200 : 500));
-      }),
+      workspaceTables.map((t) => workspacePage(t)),
     );
-    setData(Object.fromEntries(tables.map((t, i) => [t, rows[i] || []])));
+    const next = Object.fromEntries(
+      workspaceTables.map((t, i) => [t, rows[i]]),
+    );
+    const summaries = (await result(db.rpc("conversation_summaries"))) || [];
+    next.conversations = next.conversations
+      .map((c) => ({
+        ...c,
+        ...summaries.find((s: any) => s.conversation_id === c.id),
+      }))
+      .sort((a, b) =>
+        (b.last_at || b.created_at).localeCompare(a.last_at || a.created_at),
+      );
+    const profiles = await relatedProfiles(user.id, next);
+    if (version !== requestVersion.current || sessionUser.current !== user.id)
+      return;
+    setMore(
+      Object.fromEntries(
+        workspaceTables.map((t, i) => [t, rows[i].length === PAGE_SIZE]),
+      ),
+    );
+    setData({ ...next, profiles });
   }, [user?.id]);
   useEffect(() => {
     if (!user) return;
@@ -118,11 +135,56 @@ function App() {
         { event: "*", schema: "public", table: "friendships" },
         () => run(refresh),
       )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages" },
+        () => run(refresh),
+      )
       .subscribe();
     return () => {
       void db.removeChannel(channel);
     };
   }, [user?.id, refresh]);
+  useEffect(() => {
+    const id = route.startsWith("profile/") ? route.split("/")[1] : null;
+    if (!id || !user) return;
+    let alive = true;
+    run(async () => {
+      const profile = await result(
+        db.from("profiles").select("*").eq("id", id).maybeSingle(),
+      );
+      if (alive && profile)
+        setData((current: any) =>
+          current
+            ? { ...current, profiles: appendRows(current.profiles, [profile]) }
+            : current,
+        );
+    });
+    return () => {
+      alive = false;
+    };
+  }, [route, user?.id, data?.profiles.length]);
+  async function loadMore(table: WorkspaceTable) {
+    if (pageBusy || !data || !user) return;
+    const owner = user.id,
+      version = requestVersion.current;
+    setPageBusy(true);
+    await run(async () => {
+      const rows = await workspacePage(table, data[table].length);
+      if (sessionUser.current !== owner || version !== requestVersion.current)
+        return;
+      const next = { ...data, [table]: appendRows(data[table], rows) };
+      next.profiles = await relatedProfiles(owner, next);
+      if (sessionUser.current !== owner || version !== requestVersion.current)
+        return;
+      setData(next);
+      setMore((current) => ({
+        ...current,
+        [table]: rows.length === PAGE_SIZE,
+      }));
+    });
+    setPageBusy(false);
+  }
   if (!ready) return <div className="loading">Загрузка MEMORA…</div>;
   if (!user || recovery) return <Auth recovery={recovery} />;
   const own = data?.profiles.find((p: any) => p.id === user.id),
@@ -205,6 +267,31 @@ function App() {
             </div>
           )}
           {loading && <p role="status">Загружаем ваше пространство…</p>}
+          {data &&
+            Object.entries(more)
+              .filter(
+                ([table, available]) =>
+                  available &&
+                  (table === "categories" ||
+                    (table === "notes" &&
+                      ["home", "notes", "favorites"].includes(route)) ||
+                    (table === "events" &&
+                      ["home", "calendar", "events"].includes(route)) ||
+                    (["friendships", "conversations"].includes(table) &&
+                      route === "chats") ||
+                    (table === "notifications" && route === "notifications")),
+              )
+              .map(([table]) => (
+                <button
+                  key={table}
+                  disabled={pageBusy}
+                  onClick={() => loadMore(table as WorkspaceTable)}
+                >
+                  {pageBusy
+                    ? "Загрузка…"
+                    : `Загрузить ещё: ${{ notes: "заметки", categories: "категории", events: "события", friendships: "друзья и заявки", conversations: "переписки", notifications: "уведомления" }[table]}`}
+                </button>
+              ))}
           {data && (
             <>
               {route === "home" ? (
