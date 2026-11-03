@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { db, result, date, dayKey } from "../lib/supabase";
 import { Empty, Modal } from "../components/ui";
 export function Events({
-  events,
+  events: initialEvents,
   userId,
   run,
   refresh,
@@ -12,7 +12,70 @@ export function Events({
 }: any) {
   const [month, setMonth] = useState(new Date()),
     [selected, setSelected] = useState(dayKey(new Date())),
-    [edit, setEdit] = useState<any>(null);
+    [edit, setEdit] = useState<any>(null),
+    [monthEvents, setMonthEvents] = useState<any[]>([]),
+    [upcoming, setUpcoming] = useState<any[]>([]),
+    [monthMore, setMonthMore] = useState(false),
+    [upcomingMore, setUpcomingMore] = useState(false),
+    [fetching, setFetching] = useState(false);
+  const monthPage = async (offset = 0) => {
+    const first = new Date(month.getFullYear(), month.getMonth(), 1);
+    const start = new Date(
+      month.getFullYear(),
+      month.getMonth(),
+      1 - ((first.getDay() + 6) % 7),
+    );
+    const end = new Date(start);
+    end.setDate(end.getDate() + 42);
+    return (
+      (await result(
+        db
+          .from("events")
+          .select("*")
+          .gte("starts_at", start.toISOString())
+          .lt("starts_at", end.toISOString())
+          .order("starts_at")
+          .order("id")
+          .range(offset, offset + 99),
+      )) || []
+    );
+  };
+  const upcomingPage = async (offset = 0) =>
+    (await result(
+      db
+        .from("events")
+        .select("*")
+        .gte("ends_at", new Date().toISOString())
+        .order("starts_at")
+        .order("id")
+        .range(offset, offset + (compact ? 2 : 49)),
+    )) || [];
+  useEffect(() => {
+    let alive = true;
+    setFetching(true);
+    run(async () => {
+      const [monthRows, nextRows] = await Promise.all([
+        calendar || compact ? monthPage() : Promise.resolve([]),
+        !calendar ? upcomingPage() : Promise.resolve([]),
+      ]);
+      if (!alive) return;
+      setMonthEvents(monthRows);
+      setUpcoming(nextRows);
+      setMonthMore(monthRows.length === 100);
+      setUpcomingMore(!compact && nextRows.length === 50);
+    }).finally(() => {
+      if (alive) setFetching(false);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [month, calendar, compact, initialEvents]);
+  const events = calendar || compact ? monthEvents : initialEvents;
+  const changeMonth = (delta: number) => {
+    const next = new Date(month.getFullYear(), month.getMonth() + delta, 1);
+    setMonth(next);
+    setSelected(dayKey(next));
+  };
   const local = (s: string) => {
     const d = new Date(s);
     return `${dayKey(d)}T${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
@@ -24,7 +87,7 @@ export function Events({
       starts_at: selected + "T12:00",
       ends_at: selected + "T13:00",
     });
-  let items = events.filter((e: any) =>
+  let items = (calendar ? events : upcoming).filter((e: any) =>
     calendar
       ? dayKey(new Date(e.starts_at)) === selected
       : new Date(e.ends_at) >= new Date(),
@@ -41,6 +104,37 @@ export function Events({
           {!compact && "Создать событие"}
         </button>
       </header>
+      {fetching && <p role="status">Загрузка событий…</p>}
+      {monthMore && (calendar || compact) && (
+        <button
+          disabled={fetching}
+          onClick={() => {
+            setFetching(true);
+            run(async () => {
+              const rows = await monthPage(monthEvents.length);
+              setMonthEvents((current) => [...current, ...rows]);
+              setMonthMore(rows.length === 100);
+            }).finally(() => setFetching(false));
+          }}
+        >
+          Загрузить остальные события месяца
+        </button>
+      )}
+      {upcomingMore && !calendar && (
+        <button
+          disabled={fetching}
+          onClick={() => {
+            setFetching(true);
+            run(async () => {
+              const rows = await upcomingPage(upcoming.length);
+              setUpcoming((current) => [...current, ...rows]);
+              setUpcomingMore(rows.length === 50);
+            }).finally(() => setFetching(false));
+          }}
+        >
+          Ещё предстоящие события
+        </button>
+      )}
       {!compact && (
         <p className="muted">
           {calendar
@@ -54,9 +148,7 @@ export function Events({
           <div className="month">
             <button
               aria-label="Предыдущий месяц"
-              onClick={() =>
-                setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))
-              }
+              onClick={() => changeMonth(-1)}
             >
               <ChevronLeft size={18} />
             </button>
@@ -66,12 +158,7 @@ export function Events({
                 year: "numeric",
               })}
             </strong>
-            <button
-              aria-label="Следующий месяц"
-              onClick={() =>
-                setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))
-              }
-            >
+            <button aria-label="Следующий месяц" onClick={() => changeMonth(1)}>
               <ChevronRight size={18} />
             </button>
           </div>

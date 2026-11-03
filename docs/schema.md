@@ -26,3 +26,5 @@ private.bootstrap создаёт профиль и настройки при р�
 ## Сводка переписок
 
 Миграция 20261103144639_conversation_summaries.sql применена к этому же проекту. public.conversation_summaries — SECURITY INVOKER, search_path пустой, EXECUTE отозван у PUBLIC/anon и выдан authenticated. Возвращает только переписки текущего участника с последним сообщением и непрочитанными по read_receipts; RLS применяется ко всем источникам.
+
+public.search_notes — invoker RPC поиска по личным заметкам (заголовок, текст и теги), фильтрации категорий/избранного, сортировки и страниц по 50. Вызов разрешён только authenticated; явная проверка user_id=auth.uid() дополняет RLS. Ввод ищется как буквальная подстрока, а не как SQL-шаблон.

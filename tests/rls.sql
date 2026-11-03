@@ -7,7 +7,7 @@ insert into public.events(user_id,title,starts_at,ends_at) values(auth.uid(),'te
 insert into public.friendships(id,requester_id,recipient_id) values('30000000-0000-4000-8000-000000000001',auth.uid(),'10000000-0000-4000-8000-000000000002');
 do $$ begin begin insert into public.friendships(requester_id,recipient_id) values(auth.uid(),'10000000-0000-4000-8000-000000000002');raise exception 'duplicate allowed';exception when unique_violation then null;end;end $$;
 select set_config('request.jwt.claims','{"sub":"10000000-0000-4000-8000-000000000002","role":"authenticated"}',true);
-do $$ begin if exists(select 1 from public.notes) then raise exception 'notes leaked';end if;if exists(select 1 from public.events) then raise exception 'events leaked';end if;end $$;
+do $$ begin if exists(select 1 from public.search_notes('private')) then raise exception 'search leaked';end if;if exists(select 1 from public.notes) then raise exception 'notes leaked';end if;if exists(select 1 from public.events) then raise exception 'events leaked';end if;end $$;
 update public.profiles set bio='attack' where id='10000000-0000-4000-8000-000000000001';
 update public.friendships set status='accepted' where id='30000000-0000-4000-8000-000000000001';
 insert into public.conversations(id,user_a,user_b) values('40000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001',auth.uid());
@@ -20,6 +20,8 @@ do $$ begin if (select bio from public.profiles where id=auth.uid())<>'' then ra
 do $$ begin if (select unread from public.conversation_summaries() where conversation_id='40000000-0000-4000-8000-000000000001')<>1 then raise exception 'unread count incorrect';end if;end $$;
 insert into public.read_receipts(conversation_id,user_id,read_at) values('40000000-0000-4000-8000-000000000001',auth.uid(),now());
 do $$ begin if (select unread from public.conversation_summaries() where conversation_id='40000000-0000-4000-8000-000000000001')<>0 then raise exception 'read receipt ignored';end if;end $$;
+update public.notes set tags=array['проверкапоиска'] where user_id=auth.uid();
+do $$ begin if (select count(*) from public.search_notes('проверкапоиска'))<>1 then raise exception 'tag search missing';end if;end $$;
 update public.notes set title='edited' where user_id=auth.uid();
 delete from public.notes where user_id=auth.uid();
 rollback;

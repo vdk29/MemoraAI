@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Star, Plus } from "lucide-react";
 import { db, result, date } from "../lib/supabase";
 import { Empty, Modal } from "../components/ui";
@@ -14,8 +14,44 @@ export function Notes({
 }: any) {
   const [edit, setEdit] = useState<any>(null),
     [sort, setSort] = useState("updated_at"),
-    [filter, setFilter] = useState("");
-  let items = notes
+    [filter, setFilter] = useState(""),
+    [matches, setMatches] = useState<any[]>([]),
+    [hasMore, setHasMore] = useState(false),
+    [searchBusy, setSearchBusy] = useState(false);
+  const remote =
+    !!search.trim() || favorites || !!filter || sort !== "updated_at";
+  const requestPage = async (offset = 0) =>
+    (await result(
+      db.rpc("search_notes", {
+        query_text: search.trim(),
+        only_favorites: favorites,
+        category: filter || null,
+        sort_by: sort,
+        page_offset: offset,
+      }),
+    )) || [];
+  useEffect(() => {
+    if (!remote) return;
+    let alive = true;
+    setSearchBusy(true);
+    const timer = setTimeout(
+      () =>
+        run(async () => {
+          const rows = await requestPage();
+          if (!alive) return;
+          setMatches(rows);
+          setHasMore(rows.length === 50);
+        }).finally(() => {
+          if (alive) setSearchBusy(false);
+        }),
+      250,
+    );
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, [search, favorites, filter, sort, notes]);
+  let items = (remote ? matches : notes)
     .filter(
       (n: any) =>
         (!favorites || n.favorite) &&
@@ -55,6 +91,22 @@ export function Notes({
           <Plus size={16} /> Новая заметка
         </button>
       </header>
+      {searchBusy && <p role="status">Ищем заметки…</p>}
+      {remote && hasMore && !compact && (
+        <button
+          disabled={searchBusy}
+          onClick={() => {
+            setSearchBusy(true);
+            run(async () => {
+              const rows = await requestPage(matches.length);
+              setMatches((current) => [...current, ...rows]);
+              setHasMore(rows.length === 50);
+            }).finally(() => setSearchBusy(false));
+          }}
+        >
+          Загрузить ещё результаты
+        </button>
+      )}
       {!compact && (
         <div className="toolbar">
           <select

@@ -66,7 +66,6 @@ function App() {
   useEffect(() => {
     const h = () => {
       setRoute(location.hash.slice(1) || "home");
-      setSearch("");
     };
     window.addEventListener("hashchange", h);
     db.auth.getSession().then(({ data, error }) => {
@@ -232,6 +231,7 @@ function App() {
             <Search size={19} />
             <input
               aria-label="Быстрый поиск"
+              maxLength={200}
               placeholder="Поиск по заметкам…"
               value={search}
               onChange={(e) => {
