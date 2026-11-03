@@ -1,0 +1,120 @@
+{
+  "capture_date": "2026-11-03",
+  "assets": [
+    {
+      "path": "README.md",
+      "bytes": 4181,
+      "sha256": "b9c04d7f21bb61d80b2e9afe1a3bb07acc3a19957350d184f39c522279e147fe"
+    },
+    {
+      "path": "after/auth-1440.png",
+      "bytes": 54310,
+      "sha256": "57fb12302ee91b9cfd65e70afc12720624f61545e0652c2b61cec6bf244f18e6"
+    },
+    {
+      "path": "after/auth-390.png",
+      "bytes": 34835,
+      "sha256": "7b88361cf7646badc32bef67200609cb452b589b36e6b3bc4da83cbad8c59e29"
+    },
+    {
+      "path": "after/calendar-vertical-fixture.png",
+      "bytes": 37723,
+      "sha256": "b85df86673c7fc20e814e42815a63f7832596065960a1cb9ea6f70ed89c1650d"
+    },
+    {
+      "path": "after/chats-1440.png",
+      "bytes": 54179,
+      "sha256": "c3bea2fa562f853d4c91a1fdddbb8a60c5ed1e251368390b6244c004a4fa8778"
+    },
+    {
+      "path": "after/chats-390.png",
+      "bytes": 31133,
+      "sha256": "b736f3854ba072faf44f2dc09097d2f4d3e2a2b3422da86018fdebc85420c50e"
+    },
+    {
+      "path": "after/dashboard-1440.png",
+      "bytes": 139581,
+      "sha256": "5259a0f1560c62dd9f440315dc57dd61a023851eca68505f2a82e98bbf4df3c8"
+    },
+    {
+      "path": "after/dashboard-390.png",
+      "bytes": 99992,
+      "sha256": "df46783bd8d240c89f2042b9fc0ca76462a65bbd1e0542c3de8e82384616cc2a"
+    },
+    {
+      "path": "after/home-vertical-fixture.png",
+      "bytes": 97155,
+      "sha256": "2a285674e03f2be813274163996a99eda302d4ba627543f1cf9411470e9be34c"
+    },
+    {
+      "path": "after/home-with-note-vertical-fixture.png",
+      "bytes": 112674,
+      "sha256": "b7e7ff0ec10cf581944e6c51b7b35a14c1bc9012d9a7b46d87de267e0c63b086"
+    },
+    {
+      "path": "after/settings-1440.png",
+      "bytes": 93791,
+      "sha256": "52254d269fa03fa209006db0b62f9eff770b26f5c69b8e2c65140359f1a2a10b"
+    },
+    {
+      "path": "after/settings-390.png",
+      "bytes": 62781,
+      "sha256": "3bc6c9b11eed9eaa6bbb9dd6dc724cf338a82a25199cce2ece32a19cd62d0290"
+    },
+    {
+      "path": "before/auth-1440.png",
+      "bytes": 707446,
+      "sha256": "6d8be3ccefed5032a7dae10764ed6d0da7a771534c7dee52bfda461739c220ec"
+    },
+    {
+      "path": "before/auth-390.png",
+      "bytes": 223742,
+      "sha256": "0dc5106f5b8684c3eae115cec27f7b51616d4d3fcd064c74b90f452a5d5fd0c1"
+    },
+    {
+      "path": "before/calendar-1440.png",
+      "bytes": 488114,
+      "sha256": "ecc10b95f22c95c9abbaa560d44ce303fe40d294bc50c0c002636cd0e4dda769"
+    },
+    {
+      "path": "before/calendar-390.png",
+      "bytes": 151157,
+      "sha256": "0eb7cfd46f5d28d4cd39f3a4323b472c25c46205d51cbbfbda390ba3c2bb30c6"
+    },
+    {
+      "path": "before/chat-1440.png",
+      "bytes": 465913,
+      "sha256": "7f7dc4cefea165577457fbc3a2b9258092ea5e62843393fb410465b67eef5ab7"
+    },
+    {
+      "path": "before/chat-390.png",
+      "bytes": 146352,
+      "sha256": "47f359ae39862cb96145282bdfbfb94b3c1502d094a435d6a8314e4aa54f9c98"
+    },
+    {
+      "path": "before/home-1440.png",
+      "bytes": 558201,
+      "sha256": "450baaae11ebb55e900ce341418f8ab70f2becae78b51bd6e93004afe1afe4b3"
+    },
+    {
+      "path": "before/home-390.png",
+      "bytes": 150041,
+      "sha256": "7af02246678f52aa0c582ce14917617b29d00ba876676160cb93cc8f2a44c82f"
+    },
+    {
+      "path": "clips/note-create-favorite-calendar-fixture.webm",
+      "bytes": 407333,
+      "sha256": "017e46e053e42e1a37d567dca6daa34538a15edae9d3ff0d0d1fdeb8d89dc8d7"
+    },
+    {
+      "path": "development/milestones.md",
+      "bytes": 1915,
+      "sha256": "d018e1b3707905c6625c12b10e49f54adb8cea7c1e7931689ef5d3481cc2a6d8"
+    },
+    {
+      "path": "development/note-editor-vertical-fixture.png",
+      "bytes": 85799,
+      "sha256": "c980fd66695ab78e277ed3047f1d56f977a46903b42ab1eb0019232769b5521d"
+    }
+  ]
+}
