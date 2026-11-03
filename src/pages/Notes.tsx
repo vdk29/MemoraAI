@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Star, Plus } from "lucide-react";
 import { db, result, date } from "../lib/supabase";
-import { Empty, Modal } from "../components/ui";
+import { NoteEditor } from "../components/NoteEditor";
+import { Empty } from "../components/ui";
 export function Notes({
   notes,
   categories,
@@ -17,14 +18,15 @@ export function Notes({
     [filter, setFilter] = useState(""),
     [matches, setMatches] = useState<any[]>([]),
     [hasMore, setHasMore] = useState(false),
-    [searchBusy, setSearchBusy] = useState(false);
+    [searchBusy, setSearchBusy] = useState(false),
+    [onlyFavorites, setOnlyFavorites] = useState(favorites);
   const remote =
-    !!search.trim() || favorites || !!filter || sort !== "updated_at";
+    !!search.trim() || onlyFavorites || !!filter || sort !== "updated_at";
   const requestPage = async (offset = 0) =>
     (await result(
       db.rpc("search_notes", {
         query_text: search.trim(),
-        only_favorites: favorites,
+        only_favorites: onlyFavorites,
         category: filter || null,
         sort_by: sort,
         page_offset: offset,
@@ -50,11 +52,11 @@ export function Notes({
       alive = false;
       clearTimeout(timer);
     };
-  }, [search, favorites, filter, sort, notes]);
+  }, [search, onlyFavorites, filter, sort, notes]);
   let items = (remote ? matches : notes)
     .filter(
       (n: any) =>
-        (!favorites || n.favorite) &&
+        (!onlyFavorites || n.favorite) &&
         (!filter || n.category_id === filter) &&
         `${n.title} ${n.content} ${n.tags.join(" ")}`
           .toLowerCase()
@@ -109,6 +111,21 @@ export function Notes({
       )}
       {!compact && (
         <div className="toolbar">
+          <div className="segmented">
+            <button
+              className={!onlyFavorites ? "is-active" : ""}
+              onClick={() => setOnlyFavorites(false)}
+            >
+              Все заметки
+            </button>
+            <button
+              className={onlyFavorites ? "is-active" : ""}
+              onClick={() => setOnlyFavorites(true)}
+            >
+              <Star size={14} />
+              Избранное
+            </button>
+          </div>
           <select
             aria-label="Сортировка"
             value={sort}
@@ -149,7 +166,7 @@ export function Notes({
         </div>
       )}
       {items.length ? (
-        <div className="notes-grid">
+        <div className={compact ? "notes-grid recent-list" : "notes-grid"}>
           {items.map((n: any) => (
             <article className="note" key={n.id}>
               <header>
@@ -198,113 +215,14 @@ export function Notes({
         </Empty>
       )}
       {edit && (
-        <Modal
-          title={edit.id ? "Редактировать заметку" : "Новая заметка"}
+        <NoteEditor
+          note={edit}
           close={() => setEdit(null)}
-        >
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              run(async () => {
-                const payload = {
-                  title: edit.title.trim(),
-                  content: edit.content,
-                  tags: edit.tags,
-                  category_id: edit.category_id || null,
-                  favorite: edit.favorite,
-                  user_id: userId,
-                };
-                await result(
-                  edit.id
-                    ? db.from("notes").update(payload).eq("id", edit.id)
-                    : db.from("notes").insert(payload),
-                );
-                setEdit(null);
-                await refresh();
-              });
-            }}
-          >
-            <label>
-              Название
-              <input
-                required
-                maxLength={200}
-                value={edit.title}
-                onChange={(e) => setEdit({ ...edit, title: e.target.value })}
-              />
-            </label>
-            <label>
-              Текст
-              <textarea
-                className="editor"
-                maxLength={100000}
-                value={edit.content}
-                onChange={(e) => setEdit({ ...edit, content: e.target.value })}
-              />
-            </label>
-            <label>
-              Категория
-              <select
-                value={edit.category_id || ""}
-                onChange={(e) =>
-                  setEdit({ ...edit, category_id: e.target.value })
-                }
-              >
-                <option value="">Без категории</option>
-                {categories.map((c: any) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Теги через запятую
-              <input
-                value={edit.tags.join(",")}
-                onChange={(e) =>
-                  setEdit({
-                    ...edit,
-                    tags: [
-                      ...new Set(
-                        e.target.value.split(",").map((t) => t.trim()),
-                      ),
-                    ],
-                  })
-                }
-              />
-            </label>
-            {edit.created_at && (
-              <small>
-                Создано {date(edit.created_at)} · Изменено{" "}
-                {date(edit.updated_at)}
-              </small>
-            )}
-            <footer>
-              <button className="primary">Сохранить</button>
-              {edit.id && (
-                <button
-                  type="button"
-                  className="danger"
-                  onClick={() => {
-                    if (
-                      confirm("Удалить заметку без возможности восстановления?")
-                    )
-                      run(async () => {
-                        await result(
-                          db.from("notes").delete().eq("id", edit.id),
-                        );
-                        setEdit(null);
-                        await refresh();
-                      });
-                  }}
-                >
-                  Удалить
-                </button>
-              )}
-            </footer>
-          </form>
-        </Modal>
+          categories={categories}
+          userId={userId}
+          run={run}
+          refresh={refresh}
+        />
       )}
     </>
   );

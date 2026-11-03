@@ -69,13 +69,11 @@ export function Social({
     const markRead = async () => {
       const readAt = new Date().toISOString();
       await result(
-        db
-          .from("read_receipts")
-          .upsert({
-            conversation_id: active.id,
-            user_id: userId,
-            read_at: readAt,
-          }),
+        db.from("read_receipts").upsert({
+          conversation_id: active.id,
+          user_id: userId,
+          read_at: readAt,
+        }),
       );
       await result(
         db

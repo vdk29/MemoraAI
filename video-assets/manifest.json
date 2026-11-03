@@ -42,6 +42,41 @@
       "sha256": "df46783bd8d240c89f2042b9fc0ca76462a65bbd1e0542c3de8e82384616cc2a"
     },
     {
+      "path": "after/forest-calendar-1440-fixture.png",
+      "bytes": 113701,
+      "sha256": "28e8cf9a1a3f26edf3b289bcdaf06a4033ea847acde2714a950ddf7915e1b885"
+    },
+    {
+      "path": "after/forest-calendar-390-fixture.png",
+      "bytes": 75561,
+      "sha256": "6717034c15c85a41a13ea10fcb8d2d79af80e17a19efeceb030be97172e4d6c4"
+    },
+    {
+      "path": "after/forest-dashboard-1440-fixture.png",
+      "bytes": 250960,
+      "sha256": "08e6681c8c2814a4f0ef6ce5406fd31921f0fc1a5a6e5318c69f48ad3fc901c7"
+    },
+    {
+      "path": "after/forest-dashboard-390-fixture.png",
+      "bytes": 153019,
+      "sha256": "ac1411292324d464b181fbe6ec12eb3b81aa9a363219eeca7cf6eecc347426e6"
+    },
+    {
+      "path": "after/forest-home-vertical-fixture.png",
+      "bytes": 151348,
+      "sha256": "b3681d4a793dad5e13dba8a4bb7ec03384c57909922e89358ce5704dd4dff1dd"
+    },
+    {
+      "path": "after/forest-note-expanded-1440-fixture.png",
+      "bytes": 182989,
+      "sha256": "3d0e1c59150a152c0571a90ff9d6b5a29302205fad6f283c5f1c4cbad4823986"
+    },
+    {
+      "path": "after/forest-note-expanded-390-fixture.png",
+      "bytes": 119193,
+      "sha256": "c8cf771915be8de3f7ae45b3c749f3873077a484d50211ca24f016898fca4d1b"
+    },
+    {
       "path": "after/home-vertical-fixture.png",
       "bytes": 97155,
       "sha256": "2a285674e03f2be813274163996a99eda302d4ba627543f1cf9411470e9be34c"
@@ -107,9 +142,19 @@
       "sha256": "017e46e053e42e1a37d567dca6daa34538a15edae9d3ff0d0d1fdeb8d89dc8d7"
     },
     {
+      "path": "clips/page@4193d6eec02037ca82528789468e20f0.webm",
+      "bytes": 262144,
+      "sha256": "f9029bb177de51da5e8a2e3eb8a987838e58fdf5ecbf1ede641b94f4072b16ae"
+    },
+    {
+      "path": "development/forest-note-editor-vertical-fixture.png",
+      "bytes": 139038,
+      "sha256": "c6c34ebff25d3ac1355552fe19f65892758e4162bd6b7f41b1cd65edaada6e85"
+    },
+    {
       "path": "development/milestones.md",
-      "bytes": 1915,
-      "sha256": "d018e1b3707905c6625c12b10e49f54adb8cea7c1e7931689ef5d3481cc2a6d8"
+      "bytes": 2538,
+      "sha256": "045b30bdba8c8e470d9ec5e22cb0e373a5caf2bae0ce7e822a3253d8afa60546"
     },
     {
       "path": "development/note-editor-vertical-fixture.png",

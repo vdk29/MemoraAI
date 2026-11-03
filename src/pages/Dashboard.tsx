@@ -1,0 +1,260 @@
+import { useEffect, useState } from "react";
+import {
+  Leaf,
+  FileText,
+  CalendarDays,
+  MessageCircle,
+  Star,
+  ArrowUpRight,
+  PenLine,
+  Plus,
+  Bookmark,
+  Folder,
+} from "lucide-react";
+import { db, result } from "../lib/supabase";
+import { Avatar, Empty } from "../components/ui";
+import { NoteEditor } from "../components/NoteEditor";
+import { Notes } from "./Notes";
+import { Events } from "./Events";
+export function Dashboard({ data, own, shared }: any) {
+  const [text, setText] = useState(""),
+    [busy, setBusy] = useState(false),
+    [saved, setSaved] = useState(false),
+    [note, setNote] = useState<any>(null),
+    [counts, setCounts] = useState<(number | null)[]>([]);
+  useEffect(() => {
+    let alive = true;
+    shared.run(async () => {
+      const responses = await Promise.all(
+        ["notes", "events", "friendships"].map((t) => {
+          let q = db.from(t).select("*", { count: "exact", head: true });
+          if (t === "friendships") q = q.eq("status", "accepted");
+          return q;
+        }),
+      );
+      for (const r of responses) if (r.error) throw r.error;
+      if (alive) setCounts(responses.map((r) => r.count));
+    });
+    return () => {
+      alive = false;
+    };
+  }, [data.notes, data.events, data.friendships]);
+  return (
+    <div className="dashboard editorial-dashboard">
+      <div className="dashboard-primary">
+        <section className="welcome forest-hero">
+          <div className="hero-copy">
+            <span className="eyebrow">
+              ВАШ ДЕНЬ. ВАШ РИТМ. ВАШЕ ПРОСТРАНСТВО.
+            </span>
+            <h1>Здравствуйте, {own?.display_name || "друг"}.</h1>
+            <p>Сохраняйте идеи. Находите ясность. Создавайте важное.</p>
+            <div className="hero-stats">
+              {[
+                [FileText, "Заметок"],
+                [CalendarDays, "Событий"],
+                [MessageCircle, "Друзей"],
+              ].map(([Icon, label]: any, i) => (
+                <span key={label}>
+                  <Icon size={16} />
+                  <strong>{counts[i] ?? "—"}</strong>
+                  {label}
+                </span>
+              ))}
+            </div>
+          </div>
+          <Botanical />
+        </section>
+        <section className="favorites-ribbon" aria-label="Избранные заметки">
+          <span>
+            <Star size={16} fill="currentColor" />
+            Избранное
+          </span>
+          {data.notes
+            .filter((n: any) => n.favorite)
+            .slice(0, 3)
+            .map((n: any) => (
+              <button key={n.id} onClick={() => setNote(n)}>
+                <Bookmark size={14} />
+                {n.title}
+              </button>
+            ))}
+          <a className="favorite-add" href="#favorites">
+            <Plus size={14} />
+            {data.notes.some((n: any) => n.favorite)
+              ? "Все"
+              : "Добавить важное"}
+          </a>
+        </section>
+        <section className="panel quick-capture">
+          <header className="section-head">
+            <h2>
+              <PenLine size={20} />
+              Сохранить мысль
+            </h2>
+            <span className="capture-label">Быстрая заметка</span>
+          </header>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (!text.trim() || busy) return;
+              setBusy(true);
+              await shared.run(async () => {
+                await result(
+                  db
+                    .from("notes")
+                    .insert({
+                      user_id: shared.userId,
+                      title: text.trim().split("\n")[0].slice(0, 200),
+                      content: text.trim(),
+                      tags: [],
+                      favorite: false,
+                    }),
+                );
+                setText("");
+                setSaved(true);
+                await shared.refresh();
+              });
+              setBusy(false);
+            }}
+          >
+            <textarea
+              aria-label="Быстрая заметка"
+              placeholder="Идея, наблюдение или то, что хочется запомнить…"
+              required
+              maxLength={100000}
+              value={text}
+              onChange={(e) => {
+                setText(e.target.value);
+                setSaved(false);
+              }}
+            />
+            <footer>
+              <span className="capture-hint">
+                <FileText size={15} />
+                Мысли не должны теряться
+              </span>
+              <button className="primary" disabled={busy || !text.trim()}>
+                <Bookmark size={15} />
+                {busy ? "Сохраняем…" : "Сохранить"}
+              </button>
+            </footer>
+            {saved && (
+              <p className="save-status" role="status">
+                Мысль сохранена в заметках.
+              </p>
+            )}
+          </form>
+        </section>
+        <section className="panel recent-notes">
+          <Notes {...shared} compact />
+        </section>
+        <section className="reflection-strip">
+          <Leaf size={23} />
+          <div>
+            <h3>Больше пространства для своих мыслей.</h3>
+            <p>Не нужно помнить всё. Достаточно сохранить важное.</p>
+          </div>
+          <a href="#notes" aria-label="Открыть заметки">
+            <ArrowUpRight size={22} />
+          </a>
+        </section>
+      </div>
+      <aside className="dashboard-secondary">
+        <section className="panel dashboard-calendar">
+          <Events {...shared} compact />
+        </section>
+        <section className="panel recent-conversations">
+          <header className="section-head">
+            <h2>
+              <MessageCircle size={18} />
+              Последние чаты
+            </h2>
+            <a href="#chats" aria-label="Все чаты">
+              <ArrowUpRight size={17} />
+            </a>
+          </header>
+          {data.conversations.length ? (
+            data.conversations.slice(0, 4).map((c: any) => {
+              const profile = data.profiles.find(
+                (p: any) =>
+                  p.id === (c.user_a === shared.userId ? c.user_b : c.user_a),
+              );
+              return (
+                <a className="conversation-preview" href="#chats" key={c.id}>
+                  <Avatar profile={profile} />
+                  <span>
+                    <strong>{profile?.display_name || "Переписка"}</strong>
+                    <small>{c.last_body || "Начните разговор"}</small>
+                  </span>
+                  {Number(c.unread) > 0 && <b>{c.unread}</b>}
+                </a>
+              );
+            })
+          ) : (
+            <Empty title="Хорошие мысли стоит разделить">
+              Найдите друзей и начните разговор.
+            </Empty>
+          )}
+        </section>
+      </aside>
+      {note && (
+        <NoteEditor
+          note={note}
+          close={() => setNote(null)}
+          categories={data.categories}
+          userId={shared.userId}
+          run={shared.run}
+          refresh={shared.refresh}
+        />
+      )}
+    </div>
+  );
+}
+function Botanical() {
+  return (
+    <svg className="botanical" viewBox="0 0 340 240" aria-hidden="true">
+      <defs>
+        <linearGradient id="leaf-tone" x1="0" y1="0" x2="1" y2="1">
+          <stop stopColor="#728967" />
+          <stop offset="1" stopColor="#294e31" />
+        </linearGradient>
+        <filter id="leaf-shadow">
+          <feDropShadow
+            dx="-8"
+            dy="12"
+            stdDeviation="9"
+            floodColor="#344c31"
+            floodOpacity=".18"
+          />
+        </filter>
+      </defs>
+      <g filter="url(#leaf-shadow)" fill="url(#leaf-tone)">
+        <path
+          d="M320 245 Q245 125 255 -10"
+          fill="none"
+          stroke="#6c7b53"
+          strokeWidth="3"
+        />
+        {[
+          [258, 10, 5],
+          [248, 60, -18],
+          [268, 110, 15],
+          [289, 169, 32],
+        ].map(([x, y, a], i) => (
+          <g key={i} transform={`translate(${x} ${y}) rotate(${a})`}>
+            <path d="M0 0 C-25 -62 -98 -72 -119 -40 C-92 -5 -46 14 0 0Z" />
+            <path d="M-2 0 Q47 -69 82 -55 Q94 -16 -2 0" />
+            <path
+              d="M-110 -39 Q-61 -24 0 0 M1 0 Q42 -28 77 -51"
+              fill="none"
+              stroke="#a1ae86"
+              strokeWidth=".8"
+              opacity=".7"
+            />
+          </g>
+        ))}
+      </g>
+    </svg>
+  );
+}

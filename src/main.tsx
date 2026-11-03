@@ -14,6 +14,9 @@ import {
   Bell,
   Search,
   ArrowUpRight,
+  ChevronDown,
+  LogOut,
+  Folder,
 } from "lucide-react";
 import { db, result } from "./lib/supabase";
 import {
@@ -24,6 +27,7 @@ import {
   PAGE_SIZE,
   type WorkspaceTable,
 } from "./lib/workspace";
+import { Dashboard } from "./pages/Dashboard";
 import { Auth } from "./pages/Auth";
 import { Notes } from "./pages/Notes";
 import { Events } from "./pages/Events";
@@ -35,11 +39,7 @@ const nav = [
   ["home", "Главная", House],
   ["notes", "Заметки", FileText],
   ["calendar", "Календарь", CalendarDays],
-  ["events", "События", List],
   ["chats", "Чаты и друзья", MessageCircle],
-  ["favorites", "Избранное", Star],
-  ["profile", "Профиль", UserRound],
-  ["settings", "Настройки", Settings],
 ] as const;
 function App() {
   const [user, setUser] = useState<User | null>(null),
@@ -250,10 +250,45 @@ function App() {
               <Bell size={21} />
               {unread > 0 && <b>{unread}</b>}
             </a>
-            <a href="#profile" className="row">
-              <Avatar profile={own} />
-              <span className="user-name">{own?.display_name}</span>
-            </a>
+            <details
+              className="account-menu"
+              onKeyDown={(e) => {
+                if (e.key === "Escape") e.currentTarget.open = false;
+              }}
+            >
+              <summary>
+                <Avatar profile={own} />
+                <span className="user-name">
+                  {own?.display_name || "Мой аккаунт"}
+                </span>
+                <ChevronDown size={15} />
+              </summary>
+              <div
+                className="account-dropdown"
+                onClick={(e) =>
+                  e.currentTarget.parentElement?.removeAttribute("open")
+                }
+              >
+                <a href="#profile">
+                  <UserRound size={16} />
+                  Мой профиль
+                </a>
+                <a href="#settings">
+                  <Settings size={16} />
+                  Настройки
+                </a>
+                <button
+                  onClick={() =>
+                    run(async () => {
+                      await result(db.auth.signOut());
+                    })
+                  }
+                >
+                  <LogOut size={16} />
+                  Выйти
+                </button>
+              </div>
+            </details>
           </div>
         </header>
         <main className="content">
@@ -272,11 +307,9 @@ function App() {
               .filter(
                 ([table, available]) =>
                   available &&
-                  (table === "categories" ||
-                    (table === "notes" &&
-                      ["home", "notes", "favorites"].includes(route)) ||
-                    (table === "events" &&
-                      ["home", "calendar", "events"].includes(route)) ||
+                  ((table === "categories" &&
+                    ["notes", "favorites"].includes(route)) ||
+                    (table === "notes" && route === "notes" && !search) ||
                     (["friendships", "conversations"].includes(table) &&
                       route === "chats") ||
                     (table === "notifications" && route === "notifications")),
@@ -295,114 +328,12 @@ function App() {
           {data && (
             <>
               {route === "home" ? (
-                <>
-                  <header className="page-title">
-                    <div>
-                      <span className="eyebrow">ВАШ ДЕНЬ, В ВАШЕМ РИТМЕ</span>
-                      <h1>Здравствуйте, {own?.display_name || "друг"}.</h1>
-                      <p>Место, где мысли становятся планами.</p>
-                    </div>
-                    <span className="today">
-                      {new Date().toLocaleDateString("ru-RU", {
-                        weekday: "long",
-                        day: "numeric",
-                        month: "long",
-                      })}
-                    </span>
-                  </header>
-                  <section className="welcome">
-                    <div>
-                      <span className="eyebrow">ПРОСТРАНСТВО ДЛЯ ВАЖНОГО</span>
-                      <h2>
-                        Хорошие идеи начинаются
-                        <br />
-                        со свободной мысли.
-                      </h2>
-                      <p>Запишите, что у вас на уме. Остальное подождёт.</p>
-                      <div className="row">
-                        <a className="button primary" href="#notes">
-                          Создать заметку <ArrowUpRight size={16} />
-                        </a>
-                        <a className="button" href="#calendar">
-                          Запланировать событие
-                        </a>
-                      </div>
-                    </div>
-                    <Leaf className="hero-leaf" size={150} strokeWidth={0.7} />
-                  </section>
-                  <div className="dashboard">
-                    <div>
-                      <section className="panel">
-                        <Notes {...shared} compact />
-                      </section>
-                      <section className="panel">
-                        <header className="section-head">
-                          <h2>Избранное</h2>
-                          <a href="#favorites">
-                            Открыть <ArrowUpRight size={15} />
-                          </a>
-                        </header>
-                        {data.notes
-                          .filter((n: any) => n.favorite)
-                          .slice(0, 3)
-                          .map((n: any) => (
-                            <a
-                              className="event-row"
-                              href="#favorites"
-                              key={n.id}
-                            >
-                              <Star size={18} />
-                              {n.title}
-                            </a>
-                          ))}
-                        {!data.notes.some((n: any) => n.favorite) && (
-                          <Empty title="Важное всегда под рукой">
-                            Отметьте заметку звёздочкой.
-                          </Empty>
-                        )}
-                      </section>
-                      <section className="panel">
-                        <header className="section-head">
-                          <h2>Последние переписки</h2>
-                          <a href="#chats">Все чаты</a>
-                        </header>
-                        {data.conversations.slice(0, 3).map((c: any) => (
-                          <a className="event-row" href="#chats" key={c.id}>
-                            <MessageCircle size={20} />
-                            {data.profiles.find(
-                              (p: any) =>
-                                p.id ===
-                                (c.user_a === user.id ? c.user_b : c.user_a),
-                            )?.display_name || "Переписка"}
-                          </a>
-                        ))}
-                        {!data.conversations.length && (
-                          <Empty title="Оставайтесь на связи">
-                            Найдите друзей и начните разговор.
-                          </Empty>
-                        )}
-                      </section>
-                    </div>
-                    <aside>
-                      <section className="panel">
-                        <Events {...shared} compact />
-                      </section>
-                      <section className="panel calm">
-                        <Leaf size={26} />
-                        <h3>Всё начинается с одной мысли.</h3>
-                        <p>
-                          Не обязательно держать всё в голове. Для этого есть
-                          MEMORA.
-                        </p>
-                      </section>
-                    </aside>
-                  </div>
-                </>
+                <Dashboard data={data} own={own} shared={shared} />
               ) : route === "notes" || route === "favorites" ? (
                 <Notes {...shared} favorites={route === "favorites"} />
               ) : route === "calendar" || route === "events" ? (
-                <section className="panel">
-                  <Events {...shared} calendar={route === "calendar"} />
+                <section className="calendar-page">
+                  <Events {...shared} calendar />
                 </section>
               ) : route === "chats" ? (
                 <Social {...shared} />

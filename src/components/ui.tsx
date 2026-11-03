@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, useRef, type ReactNode } from "react";
 import { X, FileText } from "lucide-react";
 import { db, result } from "../lib/supabase";
 export function Empty({
@@ -25,10 +25,14 @@ export function Modal({
   children: ReactNode;
   close: () => void;
 }) {
+  const closeRef = useRef(close);
+  closeRef.current = close;
   useEffect(() => {
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     const old = document.activeElement as HTMLElement;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") close();
+      if (e.key === "Escape") closeRef.current();
       if (e.key === "Tab") {
         const els = Array.from(
           document.querySelectorAll<HTMLElement>(
@@ -50,9 +54,10 @@ export function Modal({
     document.querySelector<HTMLElement>('[role="dialog"] input')?.focus();
     return () => {
       document.removeEventListener("keydown", handler);
+      document.body.style.overflow = overflow;
       old?.focus();
     };
-  }, [close]);
+  }, []);
   return (
     <div className="overlay">
       <section

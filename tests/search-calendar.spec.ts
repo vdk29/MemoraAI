@@ -84,7 +84,9 @@ test("search includes unloaded notes and calendar fetches the displayed month", 
   await page.getByRole("button", { name: "Следующий месяц" }).click();
   await page.locator(".calendar button").filter({ hasText: /^15$/ }).click();
   await expect(
-    page.getByRole("button", { name: /Событие следующего месяца/ }),
+    page
+      .locator(".event-chip")
+      .filter({ hasText: "Событие следующего месяца" }),
   ).toBeVisible();
   expect(rangeQueried).toBeTruthy();
 });

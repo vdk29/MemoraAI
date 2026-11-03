@@ -94,9 +94,9 @@ for (const width of [1440, 390])
     await expect(
       page.getByRole("heading", { name: "Проверка редактора" }),
     ).toBeVisible();
-    await page.getByRole("button", { name: "Избранное", exact: true }).click();
+    await page.locator('.note button[aria-label="Избранное"]').click();
     await expect(
-      page.getByRole("button", { name: "Избранное", exact: true }),
+      page.locator('.note button[aria-label="Избранное"]'),
     ).toHaveAttribute("aria-pressed", "true");
     await page.getByRole("button", { name: /Проверка редактора/ }).click();
     await page

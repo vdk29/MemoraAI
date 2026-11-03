@@ -1,9 +1,21 @@
-import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  FileText,
+  CalendarDays,
+  Clock,
+  ArrowUpRight,
+  Pencil,
+} from "lucide-react";
 import { db, result, date, dayKey } from "../lib/supabase";
 import { Empty, Modal } from "../components/ui";
+import { NoteEditor } from "../components/NoteEditor";
 export function Events({
   events: initialEvents,
+  notes: initialNotes = [],
+  categories = [],
   userId,
   run,
   refresh,
@@ -13,64 +25,68 @@ export function Events({
   const [month, setMonth] = useState(new Date()),
     [selected, setSelected] = useState(dayKey(new Date())),
     [edit, setEdit] = useState<any>(null),
+    [noteEdit, setNoteEdit] = useState<any>(null),
+    [preview, setPreview] = useState<any>(null),
     [monthEvents, setMonthEvents] = useState<any[]>([]),
+    [monthNotes, setMonthNotes] = useState<any[]>([]),
     [upcoming, setUpcoming] = useState<any[]>([]),
-    [monthMore, setMonthMore] = useState(false),
-    [upcomingMore, setUpcomingMore] = useState(false),
-    [fetching, setFetching] = useState(false);
-  const monthPage = async (offset = 0) => {
-    const first = new Date(month.getFullYear(), month.getMonth(), 1);
-    const start = new Date(
-      month.getFullYear(),
-      month.getMonth(),
-      1 - ((first.getDay() + 6) % 7),
-    );
-    const end = new Date(start);
-    end.setDate(end.getDate() + 42);
-    return (
-      (await result(
-        db
-          .from("events")
-          .select("*")
-          .gte("starts_at", start.toISOString())
-          .lt("starts_at", end.toISOString())
-          .order("starts_at")
-          .order("id")
-          .range(offset, offset + 99),
-      )) || []
-    );
+    [fetching, setFetching] = useState(false),
+    [more, setMore] = useState(false);
+  const first = new Date(month.getFullYear(), month.getMonth(), 1);
+  const start = new Date(
+    month.getFullYear(),
+    month.getMonth(),
+    1 - ((first.getDay() + 6) % 7),
+  );
+  const finish = new Date(start);
+  finish.setDate(finish.getDate() + 42);
+  const getPage = async (offset = 0, noteOffset = offset) => {
+    const query = db
+      .from("events")
+      .select("*")
+      .gte("starts_at", start.toISOString())
+      .lt("starts_at", finish.toISOString())
+      .order("starts_at")
+      .order("id")
+      .range(offset, offset + 99);
+    const notesQuery = db
+      .from("notes")
+      .select("*")
+      .or(
+        `and(scheduled_on.gte.${dayKey(start)},scheduled_on.lt.${dayKey(finish)}),and(scheduled_on.is.null,created_at.gte.${start.toISOString()},created_at.lt.${finish.toISOString()})`,
+      )
+      .order("created_at")
+      .order("id")
+      .range(noteOffset, noteOffset + 99);
+    return Promise.all([result(query), result(notesQuery)]);
   };
-  const upcomingPage = async (offset = 0) =>
-    (await result(
-      db
-        .from("events")
-        .select("*")
-        .gte("ends_at", new Date().toISOString())
-        .order("starts_at")
-        .order("id")
-        .range(offset, offset + (compact ? 2 : 49)),
-    )) || [];
   useEffect(() => {
     let alive = true;
     setFetching(true);
     run(async () => {
-      const [monthRows, nextRows] = await Promise.all([
-        calendar || compact ? monthPage() : Promise.resolve([]),
-        !calendar ? upcomingPage() : Promise.resolve([]),
+      const [[events, notes], next] = await Promise.all([
+        getPage(),
+        result(
+          db
+            .from("events")
+            .select("*")
+            .gte("ends_at", new Date().toISOString())
+            .order("starts_at")
+            .limit(compact ? 3 : 10),
+        ),
       ]);
       if (!alive) return;
-      setMonthEvents(monthRows);
-      setUpcoming(nextRows);
-      setMonthMore(monthRows.length === 100);
-      setUpcomingMore(!compact && nextRows.length === 50);
+      setMonthEvents(events || []);
+      setMonthNotes(notes || []);
+      setUpcoming(next || []);
+      setMore(events?.length === 100 || notes?.length === 100);
     }).finally(() => {
       if (alive) setFetching(false);
     });
     return () => {
       alive = false;
     };
-  }, [month, calendar, compact, initialEvents]);
-  const events = calendar || compact ? monthEvents : initialEvents;
+  }, [month, initialEvents, initialNotes]);
   const changeMonth = (delta: number) => {
     const next = new Date(month.getFullYear(), month.getMonth() + delta, 1);
     setMonth(next);
@@ -80,6 +96,8 @@ export function Events({
     const d = new Date(s);
     return `${dayKey(d)}T${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
   };
+  const openEvent = (e: any) =>
+    setEdit({ ...e, starts_at: local(e.starts_at), ends_at: local(e.ends_at) });
   const create = () =>
     setEdit({
       title: "",
@@ -87,159 +105,352 @@ export function Events({
       starts_at: selected + "T12:00",
       ends_at: selected + "T13:00",
     });
-  let items = (calendar ? events : upcoming).filter((e: any) =>
-    calendar
-      ? dayKey(new Date(e.starts_at)) === selected
-      : new Date(e.ends_at) >= new Date(),
+  const noteDay = (n: any) => n.scheduled_on || dayKey(new Date(n.created_at));
+  const dayEvents = monthEvents.filter(
+      (e) => dayKey(new Date(e.starts_at)) === selected,
+    ),
+    dayNotes = monthNotes.filter((n) => noteDay(n) === selected);
+  const selectedLabel = new Date(selected + "T12:00:00").toLocaleDateString(
+    "ru-RU",
+    { day: "numeric", month: "long", weekday: "long" },
   );
-  if (compact) items = items.slice(0, 3);
   return (
-    <>
-      <header className="section-head">
-        <h2>
-          {calendar ? "Календарь" : compact ? "Ближайшие события" : "События"}
-        </h2>
-        <button aria-label="Создать событие" onClick={create}>
-          <Plus size={19} />
-          {!compact && "Создать событие"}
-        </button>
-      </header>
-      {fetching && <p role="status">Загрузка событий…</p>}
-      {monthMore && (calendar || compact) && (
-        <button
-          disabled={fetching}
-          onClick={() => {
-            setFetching(true);
-            run(async () => {
-              const rows = await monthPage(monthEvents.length);
-              setMonthEvents((current) => [...current, ...rows]);
-              setMonthMore(rows.length === 100);
-            }).finally(() => setFetching(false));
-          }}
-        >
-          Загрузить остальные события месяца
-        </button>
-      )}
-      {upcomingMore && !calendar && (
-        <button
-          disabled={fetching}
-          onClick={() => {
-            setFetching(true);
-            run(async () => {
-              const rows = await upcomingPage(upcoming.length);
-              setUpcoming((current) => [...current, ...rows]);
-              setUpcomingMore(rows.length === 50);
-            }).finally(() => setFetching(false));
-          }}
-        >
-          Ещё предстоящие события
-        </button>
-      )}
+    <div className={compact ? "calendar-widget" : "calendar-workspace"}>
       {!compact && (
-        <p className="muted">
-          {calendar
-            ? "Выберите день, чтобы спланировать его."
-            : "Предстоящие события в хронологическом порядке."}{" "}
-          Время: {Intl.DateTimeFormat().resolvedOptions().timeZone}.
-        </p>
+        <header className="calendar-heading">
+          <div>
+            <span className="eyebrow">МЫСЛИ И ПЛАНЫ В ОДНОМ РИТМЕ</span>
+            <h1>Ваш календарь</h1>
+            <p>Место для того, что уже случилось, и того, что впереди.</p>
+          </div>
+          <button
+            className="primary"
+            aria-label="Создать событие"
+            onClick={create}
+          >
+            <Plus size={17} />
+            Создать событие
+          </button>
+        </header>
       )}
-      {(calendar || compact) && (
-        <>
-          <div className="month">
+      <section
+        className={compact ? "mini-month" : "month-surface"}
+        aria-busy={fetching}
+      >
+        <header className="month-navigation">
+          <div className="month-controls">
             <button
               aria-label="Предыдущий месяц"
               onClick={() => changeMonth(-1)}
             >
               <ChevronLeft size={18} />
             </button>
-            <strong>
+            <h2>
               {month.toLocaleDateString("ru-RU", {
                 month: "long",
                 year: "numeric",
               })}
-            </strong>
+            </h2>
             <button aria-label="Следующий месяц" onClick={() => changeMonth(1)}>
               <ChevronRight size={18} />
             </button>
           </div>
-          <div className="calendar">
-            {["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map((d) => (
-              <small key={d}>{d}</small>
-            ))}
-            {Array.from({ length: 42 }, (_, i) => {
-              const start = new Date(month.getFullYear(), month.getMonth(), 1),
-                d = new Date(
-                  month.getFullYear(),
-                  month.getMonth(),
-                  i - ((start.getDay() + 6) % 7) + 1,
-                ),
-                key = dayKey(d);
-              return (
+          {!compact && (
+            <button
+              onClick={() => {
+                const today = new Date();
+                setMonth(today);
+                setSelected(dayKey(today));
+              }}
+            >
+              Сегодня
+            </button>
+          )}
+        </header>
+        {!compact && (
+          <div className="calendar-legend">
+            <span>
+              <i className="legend-event" />
+              События
+            </span>
+            <span>
+              <i className="legend-note" />
+              Заметки
+            </span>
+            <small>
+              Время: {Intl.DateTimeFormat().resolvedOptions().timeZone}
+            </small>
+          </div>
+        )}
+        <div
+          className={"calendar " + (compact ? "mini-grid" : "month-grid")}
+          role="group"
+          aria-label="Дни месяца"
+        >
+          {["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map((d) => (
+            <div className="weekday" key={d}>
+              {d}
+            </div>
+          ))}
+          {Array.from({ length: 42 }, (_, i) => {
+            const d = new Date(start);
+            d.setDate(start.getDate() + i);
+            const key = dayKey(d),
+              events = monthEvents.filter(
+                (e) => dayKey(new Date(e.starts_at)) === key,
+              ),
+              notes = monthNotes.filter((n) => noteDay(n) === key),
+              today = key === dayKey(new Date());
+            return (
+              <div
+                className={`day-cell ${key === selected ? "selected" : ""} ${d.getMonth() !== month.getMonth() ? "outside" : ""} ${today ? "is-today" : ""}`}
+                key={key}
+              >
                 <button
-                  key={key}
-                  className={`${key === selected ? "selected" : ""} ${d.getMonth() !== month.getMonth() ? "outside" : ""}`}
+                  className="day-select"
+                  aria-label={d.toLocaleDateString("ru-RU", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                  aria-pressed={selected === key}
                   onClick={() => setSelected(key)}
                 >
-                  {d.getDate()}
-                  {events.some(
-                    (e: any) => dayKey(new Date(e.starts_at)) === key,
-                  ) && <i />}
+                  <span>{d.getDate()}</span>
+                  {compact && events.length + notes.length > 0 && (
+                    <i className="day-dot" />
+                  )}
                 </button>
-              );
-            })}
-          </div>
-        </>
-      )}
-      {calendar && <h3>{selected}</h3>}
-      {items.length ? (
-        items.map((e: any) => (
+                {!compact && (
+                  <div className="cell-items">
+                    {events.slice(0, 1).map((e) => (
+                      <button
+                        className="calendar-chip event-chip"
+                        key={e.id}
+                        onClick={() => {
+                          setSelected(key);
+                          openEvent(e);
+                        }}
+                      >
+                        <span className="chip-time">
+                          {new Date(e.starts_at).toLocaleTimeString("ru-RU", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                        <span>{e.title}</span>
+                      </button>
+                    ))}
+                    {notes.slice(0, 2).map((n) => (
+                      <button
+                        className="calendar-chip note-chip"
+                        key={n.id}
+                        onClick={() => {
+                          setSelected(key);
+                          setPreview(n);
+                        }}
+                      >
+                        <FileText size={12} />
+                        <span>{n.title}</span>
+                      </button>
+                    ))}
+                    {events.length + notes.length > 2 && (
+                      <button
+                        className="cell-count"
+                        onClick={() => setSelected(key)}
+                      >
+                        +{events.length + notes.length - 2}
+                      </button>
+                    )}
+                    {events.length + notes.length >
+                      Math.min(events.length, 1) +
+                        Math.min(notes.length, 2) && (
+                      <button
+                        className="cell-more"
+                        onClick={() => setSelected(key)}
+                      >
+                        Все записи · {events.length + notes.length}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        {more && (
           <button
-            className="event-row"
-            key={e.id}
-            onClick={() =>
-              setEdit({
-                ...e,
-                starts_at: local(e.starts_at),
-                ends_at: local(e.ends_at),
-              })
-            }
+            className="load-month"
+            disabled={fetching}
+            onClick={() => {
+              setFetching(true);
+              run(async () => {
+                const [e, n] = await getPage(
+                  monthEvents.length,
+                  monthNotes.length,
+                );
+                setMonthEvents((current) => [...current, ...(e || [])]);
+                setMonthNotes((current) => [...current, ...(n || [])]);
+                setMore(e?.length === 100 || n?.length === 100);
+              }).finally(() => setFetching(false));
+            }}
           >
-            <span className="event-day">{new Date(e.starts_at).getDate()}</span>
-            <span>
-              <strong>{e.title}</strong>
-              <small>{date(e.starts_at)}</small>
-            </span>
+            Загрузить остальные записи месяца
           </button>
-        ))
-      ) : (
-        <Empty title="Время для новых планов">
-          Добавьте событие в свой календарь.
-        </Empty>
-      )}
-      {!compact &&
-        !calendar &&
-        events.some((e: any) => new Date(e.ends_at) < new Date()) && (
-          <details>
-            <summary>Прошедшие события</summary>
-            {events
-              .filter((e: any) => new Date(e.ends_at) < new Date())
-              .map((e: any) => (
-                <button
-                  className="event-row"
-                  key={e.id}
-                  onClick={() =>
-                    setEdit({
-                      ...e,
-                      starts_at: local(e.starts_at),
-                      ends_at: local(e.ends_at),
-                    })
-                  }
-                >
-                  {e.title} · {date(e.starts_at)}
-                </button>
-              ))}
-          </details>
         )}
+      </section>
+      {compact ? (
+        <section className="upcoming-section">
+          <header className="section-head">
+            <h2>
+              <CalendarDays size={17} />
+              Ближайшие события
+            </h2>
+            <a href="#calendar" aria-label="Открыть календарь">
+              <ArrowUpRight size={16} />
+            </a>
+          </header>
+          {upcoming.length ? (
+            upcoming.map((e) => (
+              <button
+                className="agenda-event"
+                key={e.id}
+                onClick={() => openEvent(e)}
+              >
+                <span className="agenda-line" />
+                <span>
+                  <strong>{e.title}</strong>
+                  <small>{date(e.starts_at)}</small>
+                </span>
+                <Clock size={15} />
+              </button>
+            ))
+          ) : (
+            <Empty title="Ваш день без спешки">
+              Запланируйте событие в календаре.
+            </Empty>
+          )}
+        </section>
+      ) : (
+        <section className="day-agenda" key={selected}>
+          <header className="section-head">
+            <div>
+              <span className="eyebrow">ВЫБРАННЫЙ ДЕНЬ</span>
+              <h2>{selectedLabel}</h2>
+            </div>
+            <button
+              onClick={() =>
+                setNoteEdit({
+                  title: "",
+                  content: "",
+                  tags: [],
+                  favorite: false,
+                  scheduled_on: selected,
+                })
+              }
+            >
+              <Plus size={16} />
+              Заметка на этот день
+            </button>
+          </header>
+          <div className="agenda-columns">
+            <div>
+              <h3>
+                <CalendarDays size={16} />
+                События <span>{dayEvents.length}</span>
+              </h3>
+              {dayEvents.length ? (
+                dayEvents.map((e) => (
+                  <button
+                    className="agenda-event"
+                    key={e.id}
+                    onClick={() => openEvent(e)}
+                  >
+                    <span className="agenda-line" />
+                    <span>
+                      <strong>{e.title}</strong>
+                      <small>{date(e.starts_at)}</small>
+                    </span>
+                    <ArrowUpRight size={16} />
+                  </button>
+                ))
+              ) : (
+                <p className="agenda-empty">
+                  Пока нет событий. Можно оставить день свободным.
+                </p>
+              )}
+            </div>
+            <div>
+              <h3>
+                <FileText size={16} />
+                Заметки <span>{dayNotes.length}</span>
+              </h3>
+              {dayNotes.length ? (
+                dayNotes.map((n) => (
+                  <button
+                    className="agenda-note"
+                    key={n.id}
+                    onClick={() => setPreview(n)}
+                  >
+                    <FileText size={18} />
+                    <span>
+                      <strong>{n.title}</strong>
+                      <small>
+                        {n.content.slice(0, 90) || "Открыть заметку"}
+                      </small>
+                    </span>
+                    <ArrowUpRight size={16} />
+                  </button>
+                ))
+              ) : (
+                <p className="agenda-empty">
+                  Сохраните мысль или добавьте заметку на этот день.
+                </p>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+      {preview && (
+        <Modal title={preview.title} close={() => setPreview(null)}>
+          <div className="note-preview">
+            <div className="preview-meta">
+              <FileText size={15} />
+              {preview.scheduled_on
+                ? "Запланировано на " + preview.scheduled_on
+                : date(preview.created_at)}
+            </div>
+            <p>{preview.content || "В этой заметке пока нет текста."}</p>
+            <div className="tags">
+              {preview.tags?.filter(Boolean).map((t: string) => (
+                <span key={t}>#{t}</span>
+              ))}
+            </div>
+            <footer>
+              <button
+                className="primary"
+                onClick={() => {
+                  setNoteEdit(preview);
+                  setPreview(null);
+                }}
+              >
+                <Pencil size={15} />
+                Редактировать заметку
+              </button>
+            </footer>
+          </div>
+        </Modal>
+      )}
+      {noteEdit && (
+        <NoteEditor
+          note={noteEdit}
+          close={() => setNoteEdit(null)}
+          categories={categories}
+          userId={userId}
+          run={run}
+          refresh={refresh}
+        />
+      )}
       {edit && (
         <Modal title="Событие" close={() => setEdit(null)}>
           <form
@@ -319,6 +530,6 @@ export function Events({
           </form>
         </Modal>
       )}
-    </>
+    </div>
   );
 }
