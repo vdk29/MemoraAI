@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import {
-  Leaf,
   FileText,
   CalendarDays,
   MessageCircle,
@@ -10,6 +9,7 @@ import {
   Plus,
   Bookmark,
 } from "lucide-react";
+import { MemorySculpture } from "../components/Identity";
 import { db, result } from "../lib/supabase";
 import { Avatar, Empty } from "../components/ui";
 import { NoteEditor } from "../components/NoteEditor";
@@ -41,13 +41,11 @@ export function Dashboard({ data, own, shared }: any) {
   return (
     <div className="dashboard editorial-dashboard">
       <div className="dashboard-primary">
-        <section className="welcome forest-hero">
+        <section className="welcome product-hero">
           <div className="hero-copy">
-            <span className="eyebrow">
-              ВАШ ДЕНЬ. ВАШ РИТМ. ВАШЕ ПРОСТРАНСТВО.
-            </span>
+            <span className="eyebrow">MEMORA / ЛИЧНОЕ ПРОСТРАНСТВО</span>
             <h1>Здравствуйте, {own?.display_name || "друг"}.</h1>
-            <p>Сохраняйте идеи. Находите ясность. Создавайте важное.</p>
+            <p>Меньше переключений. Больше пространства для идей.</p>
             <div className="hero-stats">
               {[
                 [FileText, "Заметок"],
@@ -62,7 +60,7 @@ export function Dashboard({ data, own, shared }: any) {
               ))}
             </div>
           </div>
-          <Botanical />
+          <MemorySculpture />
         </section>
         <section className="favorites-ribbon" aria-label="Избранные заметки">
           <span>
@@ -147,10 +145,10 @@ export function Dashboard({ data, own, shared }: any) {
           <Notes {...shared} compact />
         </section>
         <section className="reflection-strip">
-          <Leaf size={23} />
+          <FileText size={22} />
           <div>
-            <h3>Больше пространства для своих мыслей.</h3>
-            <p>Не нужно помнить всё. Достаточно сохранить важное.</p>
+            <h3>От мысли — к следующему шагу.</h3>
+            <p>Фиксируйте идеи и связывайте их с планами.</p>
           </div>
           <a href="#notes" aria-label="Открыть заметки">
             <ArrowUpRight size={22} />
@@ -189,7 +187,7 @@ export function Dashboard({ data, own, shared }: any) {
               );
             })
           ) : (
-            <Empty title="Хорошие мысли стоит разделить">
+            <Empty title="Ваши диалоги — здесь">
               Найдите друзей и начните разговор.
             </Empty>
           )}
@@ -206,52 +204,5 @@ export function Dashboard({ data, own, shared }: any) {
         />
       )}
     </div>
-  );
-}
-function Botanical() {
-  return (
-    <svg className="botanical" viewBox="0 0 340 240" aria-hidden="true">
-      <defs>
-        <linearGradient id="leaf-tone" x1="0" y1="0" x2="1" y2="1">
-          <stop stopColor="#728967" />
-          <stop offset="1" stopColor="#294e31" />
-        </linearGradient>
-        <filter id="leaf-shadow">
-          <feDropShadow
-            dx="-8"
-            dy="12"
-            stdDeviation="9"
-            floodColor="#344c31"
-            floodOpacity=".18"
-          />
-        </filter>
-      </defs>
-      <g filter="url(#leaf-shadow)" fill="url(#leaf-tone)">
-        <path
-          d="M320 245 Q245 125 255 -10"
-          fill="none"
-          stroke="#6c7b53"
-          strokeWidth="3"
-        />
-        {[
-          [258, 10, 5],
-          [248, 60, -18],
-          [268, 110, 15],
-          [289, 169, 32],
-        ].map(([x, y, a], i) => (
-          <g key={i} transform={`translate(${x} ${y}) rotate(${a})`}>
-            <path d="M0 0 C-25 -62 -98 -72 -119 -40 C-92 -5 -46 14 0 0Z" />
-            <path d="M-2 0 Q47 -69 82 -55 Q94 -16 -2 0" />
-            <path
-              d="M-110 -39 Q-61 -24 0 0 M1 0 Q42 -28 77 -51"
-              fill="none"
-              stroke="#a1ae86"
-              strokeWidth=".8"
-              opacity=".7"
-            />
-          </g>
-        ))}
-      </g>
-    </svg>
   );
 }

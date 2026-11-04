@@ -10,7 +10,7 @@ for (const width of [1440, 390])
       .getByRole("button", { name: "Создать аккаунт", exact: true })
       .click();
     await expect(
-      page.getByRole("heading", { name: "Начните свою историю" }),
+      page.getByRole("heading", { name: "Создайте аккаунт" }),
     ).toBeVisible();
     expect(
       await page.evaluate(

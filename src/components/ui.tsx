@@ -26,14 +26,25 @@ export function Modal({
   children: ReactNode;
   close: () => void;
 }) {
+  const [closing, setClosing] = useState(false);
+  const closeTimer = useRef<number | undefined>(undefined);
   const closeRef = useRef(close);
   closeRef.current = close;
+  const requestClose = () => {
+    if (closeTimer.current !== undefined) return;
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      closeRef.current();
+      return;
+    }
+    setClosing(true);
+    closeTimer.current = window.setTimeout(() => closeRef.current(), 130);
+  };
   useEffect(() => {
     const overflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const old = document.activeElement as HTMLElement;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeRef.current();
+      if (e.key === "Escape") requestClose();
       if (e.key === "Tab") {
         const els = Array.from(
           document.querySelectorAll<HTMLElement>(
@@ -54,13 +65,14 @@ export function Modal({
     document.addEventListener("keydown", handler);
     document.querySelector<HTMLElement>('[role="dialog"] input')?.focus();
     return () => {
+      window.clearTimeout(closeTimer.current);
       document.removeEventListener("keydown", handler);
       document.body.style.overflow = overflow;
       old?.focus();
     };
   }, []);
   return createPortal(
-    <div className="overlay">
+    <div className={"overlay" + (closing ? " is-closing" : "")}>
       <section
         role="dialog"
         aria-modal="true"
@@ -69,7 +81,7 @@ export function Modal({
       >
         <header>
           <h2>{title}</h2>
-          <button aria-label="Закрыть" onClick={close}>
+          <button aria-label="Закрыть" onClick={requestClose}>
             <X size={20} />
           </button>
         </header>

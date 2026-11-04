@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { db, result } from "../lib/supabase";
+import { ThemeToggle } from "../components/ThemeToggle";
 import { Avatar, Empty } from "../components/ui";
 export function Profile({
   profile,
@@ -127,6 +128,12 @@ export function Profile({
           </form>
           {settings && (
             <>
+              <h2>Внешний вид</h2>
+              <p className="muted">
+                Выбор сохраняется на этом устройстве. Системная тема следует
+                настройкам компьютера или телефона.
+              </p>
+              <ThemeToggle expanded />
               <h2>Уведомления</h2>
               {[
                 ["notify_messages", "Новые сообщения"],

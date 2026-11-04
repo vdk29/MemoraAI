@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Leaf } from "lucide-react";
+import { Mark, MemorySculpture } from "../components/Identity";
+import { ThemeToggle } from "../components/ThemeToggle";
 import { db, result } from "../lib/supabase";
 export function Auth({ recovery = false }: { recovery?: boolean }) {
   const [mode, setMode] = useState(recovery ? "password" : "login"),
@@ -7,24 +8,26 @@ export function Auth({ recovery = false }: { recovery?: boolean }) {
     [busy, setBusy] = useState(false);
   return (
     <main className="auth">
+      <div className="auth-appearance">
+        <ThemeToggle />
+      </div>
       <div className="auth-story">
         <div className="brand">
-          <Leaf /> MEMORA
+          <Mark /> MEMORA
         </div>
         <span className="eyebrow">МЕНЬШЕ ШУМА. БОЛЬШЕ СМЫСЛА.</span>
         <h1>
-          Освободите место
-          <br />
-          для важного.
+          Соберите идеи
+          <br />в единую систему.
         </h1>
         <p>
           Идеи, планы и близкие люди.
-          <br />В одном спокойном пространстве.
+          <br />В одном рабочем пространстве.
         </p>
         <div className="auth-art">
-          <Leaf size={150} strokeWidth={0.6} />
+          <MemorySculpture />
         </div>
-        <small>Ваши мысли заслуживают своего места.</small>
+        <small>MEMORA / IDEAS INTO ACTION</small>
       </div>
       <section className="auth-form">
         <span className="eyebrow">ВАШЕ ЛИЧНОЕ ПРОСТРАНСТВО</span>
@@ -32,7 +35,7 @@ export function Auth({ recovery = false }: { recovery?: boolean }) {
           {mode === "login"
             ? "С возвращением"
             : mode === "register"
-              ? "Начните свою историю"
+              ? "Создайте аккаунт"
               : mode === "password"
                 ? "Новый пароль"
                 : "Восстановить доступ"}
@@ -110,7 +113,7 @@ export function Auth({ recovery = false }: { recovery?: boolean }) {
             {busy
               ? "Подождите…"
               : mode === "login"
-                ? "Войти в пространство"
+                ? "Войти в MEMORA"
                 : mode === "register"
                   ? "Создать аккаунт"
                   : mode === "reset"

@@ -119,9 +119,9 @@ export function Events({
       {!compact && (
         <header className="calendar-heading">
           <div>
-            <span className="eyebrow">МЫСЛИ И ПЛАНЫ В ОДНОМ РИТМЕ</span>
+            <span className="eyebrow">ПЛАНИРОВАНИЕ / КАЛЕНДАРЬ</span>
             <h1>Ваш календарь</h1>
-            <p>Место для того, что уже случилось, и того, что впереди.</p>
+            <p>Заметки и события. Один обзор вашего расписания.</p>
           </div>
           <button
             className="primary"
@@ -326,7 +326,7 @@ export function Events({
               </button>
             ))
           ) : (
-            <Empty title="Ваш день без спешки">
+            <Empty title="Событий пока нет">
               Запланируйте событие в календаре.
             </Empty>
           )}
@@ -375,9 +375,7 @@ export function Events({
                   </button>
                 ))
               ) : (
-                <p className="agenda-empty">
-                  Пока нет событий. Можно оставить день свободным.
-                </p>
+                <p className="agenda-empty">Нет событий на выбранную дату.</p>
               )}
             </div>
             <div>

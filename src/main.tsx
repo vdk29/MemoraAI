@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import type { User } from "@supabase/supabase-js";
 import {
-  Leaf,
   House,
   FileText,
   CalendarDays,
@@ -30,6 +29,9 @@ import { Events } from "./pages/Events";
 import { Social } from "./pages/Social";
 import { Profile } from "./pages/Profile";
 import { Avatar, Empty } from "./components/ui";
+import { ThemeProvider } from "./lib/theme";
+import { ThemeToggle } from "./components/ThemeToggle";
+import { Mark } from "./components/Identity";
 import "./style.css";
 const nav = [
   ["home", "Главная", House],
@@ -64,6 +66,18 @@ function App() {
       setRoute(location.hash.slice(1) || "home");
     };
     window.addEventListener("hashchange", h);
+    const shortcut = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        const field = document.querySelector<HTMLInputElement>(
+          '[aria-label="Быстрый поиск"]',
+        );
+        if (field) {
+          e.preventDefault();
+          field.focus();
+        }
+      }
+    };
+    window.addEventListener("keydown", shortcut);
     db.auth.getSession().then(({ data, error }) => {
       if (error) setError(error.message);
       setUser(data.session?.user || null);
@@ -78,6 +92,7 @@ function App() {
     });
     return () => {
       window.removeEventListener("hashchange", h);
+      window.removeEventListener("keydown", shortcut);
       subscription.unsubscribe();
     };
   }, []);
@@ -196,7 +211,7 @@ function App() {
     <div className="app">
       <aside className="sidebar">
         <a className="brand" href="#home">
-          <Leaf size={27} /> MEMORA<span>2.0</span>
+          <Mark /> MEMORA<span>2.0</span>
         </a>
         <span className="workspace">ЛИЧНОЕ ПРОСТРАНСТВО</span>
         <nav>
@@ -212,11 +227,11 @@ function App() {
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <Leaf size={25} />
+          <Mark />
           <p>
-            Сохраняйте мысли.
+            Идеи. В фокусе.
             <br />
-            Освобождайте внимание.
+            Планы. В действии.
           </p>
           <small>Одно место для важного.</small>
         </div>
@@ -236,8 +251,12 @@ function App() {
                   location.hash = "notes";
               }}
             />
+            <kbd className="search-key">
+              {navigator.platform.includes("Mac") ? "⌘" : "Ctrl"} K
+            </kbd>
           </label>
           <div className="row">
+            <ThemeToggle />
             <a
               className="notification-button"
               href="#notifications"
@@ -419,10 +438,14 @@ function App() {
           )}
         </main>
         <footer className="app-footer">
-          MEMORA <span>Ваше спокойное цифровое пространство</span>
+          MEMORA <span>Идеи, планы и люди — в одном месте</span>
         </footer>
       </div>
     </div>
   );
 }
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(
+  <ThemeProvider>
+    <App />
+  </ThemeProvider>,
+);

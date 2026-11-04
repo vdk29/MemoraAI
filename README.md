@@ -26,3 +26,7 @@ Node.js 22.12+ (или 24). `npm ci`, скопировать `.env.example` в `
 ## Архитектура
 
 React + TypeScript + Vite, Supabase Auth/Postgres/Storage/Realtime; lucide-react для SVG. Один клиент в src/lib/supabase.ts. Страницы в src/pages, общие элементы в src/components. Общие токены и responsive CSS. Пользовательский контент рендерится React как текст, без HTML-инъекций. Заметки сохраняются явно; при ошибке редактор остаётся открыт.
+
+## Light / Dark
+
+Переключатель в верхней панели, на странице входа и в настройках. При первом запуске выбирается тема ОС; выбор сохраняется на устройстве. Палитры и контракт компонентов: [docs/visual-system.md](docs/visual-system.md). Скриншоты обеих тем находятся в video-assets/after/premium-*.
