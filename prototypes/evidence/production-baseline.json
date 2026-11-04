@@ -1,0 +1,6 @@
+{
+  "application_commit": "ca78aa9fdbbee183e87a16418effd8254782163f",
+  "src_tree": "4919b0872853a9069e2018ac99d599f96a9e1318",
+  "pages_v2_tree": "2a61fc38d94b80f7db7c193893e3ad7e14f79047",
+  "scope": "Only standalone design-lab and prototypes directory may change. No main merge, no application or database changes."
+}
