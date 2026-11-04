@@ -34,7 +34,7 @@ for (const width of [1440, 390])
       await page.goto("/");
       await page.getByRole("heading", { name: "С возвращением" }).waitFor();
       await page.screenshot({
-        path: `video-assets/after/premium-${theme}-auth-${width}.png`,
+        path: `video-assets/after/trace-${theme}-auth-${width}.png`,
         fullPage: true,
       });
       await page.evaluate(
@@ -132,6 +132,7 @@ for (const width of [1440, 390])
               {
                 id: "n1",
                 title: "MEMORA — следующий шаг",
+                cover: "memory",
                 content:
                   "Собрать идеи для нового проекта.\nСфокусироваться на том, что имеет значение.",
                 tags: ["проект", "идеи"],
@@ -188,12 +189,14 @@ for (const width of [1440, 390])
         },
       );
       await page.reload();
-      await page
-        .getByRole("heading", { name: "Здравствуйте, Анна." })
-        .waitFor();
+      await page.getByRole("heading", { name: /Ваши мысли/ }).waitFor();
       await page.keyboard.press("Control+k");
-      await expect(page.getByLabel("Быстрый поиск")).toBeFocused();
-      await page.getByLabel("Быстрый поиск").blur();
+      await expect(
+        page.getByRole("dialog", { name: "Команды MEMORA" }),
+      ).toBeVisible();
+      await expect(page.getByLabel("Найти заметку или команду")).toBeFocused();
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("dialog")).toHaveCount(0);
       for (const route of [
         "home",
         "notes",
@@ -236,7 +239,7 @@ for (const width of [1440, 390])
         });
         expect(contrast).toBeGreaterThan(7);
         await page.screenshot({
-          path: `video-assets/after/premium-${theme}-${route}-${width}-fixture.png`,
+          path: `video-assets/after/trace-${theme}-${route}-${width}-fixture.png`,
           fullPage: true,
         });
       }
@@ -250,7 +253,7 @@ for (const width of [1440, 390])
         "none",
       );
       await page.screenshot({
-        path: `video-assets/after/premium-${theme}-editor-${width}-fixture.png`,
+        path: `video-assets/after/trace-${theme}-editor-${width}-fixture.png`,
         fullPage: true,
       });
       await page.keyboard.press("Escape");

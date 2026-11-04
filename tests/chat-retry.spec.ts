@@ -82,7 +82,9 @@ test("ambiguous delivery retries the same message and renders it once", async ({
     },
   );
   await page.goto("/#chats");
-  await page.getByRole("button", { name: "Мария", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Переписка: Мария", exact: true })
+    .click();
   await page
     .getByLabel("Сообщение", { exact: true })
     .fill("Одна мысль — одно сообщение");

@@ -17,6 +17,7 @@ export function NoteEditor({
       close={() => close()}
     >
       <form
+        className="trace-note-editor"
         onSubmit={(e) => {
           e.preventDefault();
           if (saving) return;
@@ -29,6 +30,7 @@ export function NoteEditor({
               category_id: edit.category_id || null,
               scheduled_on: edit.scheduled_on || null,
               favorite: edit.favorite,
+              cover: edit.cover || null,
               user_id: userId,
             };
             await result(
@@ -41,6 +43,9 @@ export function NoteEditor({
           }).finally(() => setSaving(false));
         }}
       >
+        {edit.cover === "memory" && (
+          <div className="trace-note-cover" aria-hidden="true" />
+        )}
         <label>
           Название
           <input
@@ -87,6 +92,17 @@ export function NoteEditor({
               })
             }
           />
+        </label>
+        <label>
+          Обложка
+          <select
+            aria-label="Обложка заметки"
+            value={edit.cover || ""}
+            onChange={(e) => setEdit({ ...edit, cover: e.target.value })}
+          >
+            <option value="">Без обложки</option>
+            <option value="memory">Линза памяти MEMORA</option>
+          </select>
         </label>
         <label>
           День в календаре

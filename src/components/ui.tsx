@@ -1,4 +1,10 @@
-import { useEffect, useState, useRef, type ReactNode } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useState,
+  useRef,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
 import { X, FileText } from "lucide-react";
 import { db, result } from "../lib/supabase";
@@ -10,7 +16,7 @@ export function Empty({
   children?: ReactNode;
 }) {
   return (
-    <div className="empty">
+    <div className="empty trace-empty">
       <FileText size={28} />
       <h3>{title}</h3>
       <p>{children || "Здесь появятся ваши записи."}</p>
@@ -28,6 +34,24 @@ export function Modal({
 }) {
   const [closing, setClosing] = useState(false);
   const closeTimer = useRef<number | undefined>(undefined);
+  const dialog = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    const panel = dialog.current;
+    const source = (document.activeElement as HTMLElement)?.closest(".note");
+    if (!panel?.querySelector(".trace-note-editor") || !source) return;
+    const a = source.getBoundingClientRect(),
+      b = panel.getBoundingClientRect();
+    const clamp = (v: number) => Math.max(-180, Math.min(180, v));
+    panel.style.setProperty(
+      "--trace-open-x",
+      clamp(a.x + a.width / 2 - b.x - b.width / 2) + "px",
+    );
+    panel.style.setProperty(
+      "--trace-open-y",
+      clamp(a.y + a.height / 2 - b.y - b.height / 2) + "px",
+    );
+    panel.classList.add("trace-spatial");
+  }, []);
   const closeRef = useRef(close);
   closeRef.current = close;
   const requestClose = () => {
@@ -74,6 +98,7 @@ export function Modal({
   return createPortal(
     <div className={"overlay" + (closing ? " is-closing" : "")}>
       <section
+        ref={dialog}
         role="dialog"
         aria-modal="true"
         aria-label={title}

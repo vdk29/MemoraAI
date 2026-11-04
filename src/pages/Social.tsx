@@ -278,15 +278,30 @@ export function Social({
         <h3>История переписок</h3>
         {conversations.map((c: any) => (
           <button
-            className="event-row"
+            className={
+              "event-row trace-conversation" +
+              (active?.id === c.id ? " selected" : "")
+            }
             key={c.id}
+            aria-label={
+              "Переписка: " +
+              (person(c.user_a === userId ? c.user_b : c.user_a)
+                ?.display_name || "пользователем")
+            }
             onClick={() => {
               setActive(c);
             }}
           >
-            {person(c.user_a === userId ? c.user_b : c.user_a)?.display_name ||
-              "Переписка"}{" "}
-            {c.last_body && <small>{c.last_body.slice(0, 80)}</small>}
+            <Avatar
+              profile={person(c.user_a === userId ? c.user_b : c.user_a)}
+            />
+            <span>
+              <strong>
+                {person(c.user_a === userId ? c.user_b : c.user_a)
+                  ?.display_name || "Переписка"}
+              </strong>
+              {c.last_body && <small>{c.last_body.slice(0, 80)}</small>}
+            </span>
             {Number(c.unread) > 0 && (
               <b aria-label="Непрочитанные">{c.unread}</b>
             )}
@@ -297,6 +312,11 @@ export function Social({
         {active ? (
           <>
             <header>
+              <Avatar
+                profile={person(
+                  active.user_a === userId ? active.user_b : active.user_a,
+                )}
+              />
               <h2>
                 {person(
                   active.user_a === userId ? active.user_b : active.user_a,
@@ -341,13 +361,34 @@ export function Social({
                   {historyBusy ? "Загрузка…" : "Загрузить предыдущие"}
                 </button>
               )}
-              {messages.map((m) => (
-                <div
-                  key={m.id}
-                  className={"bubble " + (m.sender_id === userId ? "mine" : "")}
-                >
-                  {m.body}
-                  <small>{date(m.created_at)}</small>
+              {messages.map((m, index) => (
+                <div className="trace-message-group" key={m.id}>
+                  {(index === 0 ||
+                    new Date(
+                      messages[index - 1].created_at,
+                    ).toLocaleDateString() !==
+                      new Date(m.created_at).toLocaleDateString()) && (
+                    <div className="trace-date-divider">
+                      {new Date(m.created_at).toLocaleDateString("ru-RU", {
+                        day: "numeric",
+                        month: "long",
+                      })}
+                    </div>
+                  )}
+                  <div
+                    key={m.id}
+                    className={
+                      "bubble " + (m.sender_id === userId ? "mine" : "")
+                    }
+                  >
+                    {m.body}
+                    <small>
+                      {new Date(m.created_at).toLocaleTimeString("ru-RU", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </small>
+                  </div>
                 </div>
               ))}
               <div ref={end} />

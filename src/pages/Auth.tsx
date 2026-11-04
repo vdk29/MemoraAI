@@ -17,8 +17,9 @@ export function Auth({ recovery = false }: { recovery?: boolean }) {
         </div>
         <span className="eyebrow">МЕНЬШЕ ШУМА. БОЛЬШЕ СМЫСЛА.</span>
         <h1>
-          Соберите идеи
-          <br />в единую систему.
+          Важное
+          <br />
+          остаётся с вами.
         </h1>
         <p>
           Идеи, планы и близкие люди.
@@ -27,7 +28,11 @@ export function Auth({ recovery = false }: { recovery?: boolean }) {
         <div className="auth-art">
           <MemorySculpture />
         </div>
-        <small>MEMORA / IDEAS INTO ACTION</small>
+        <small>
+          MEMORA / PERSONAL SPACE
+          <br />
+          EVERY THOUGHT LEAVES A TRACE.
+        </small>
       </div>
       <section className="auth-form">
         <span className="eyebrow">ВАШЕ ЛИЧНОЕ ПРОСТРАНСТВО</span>

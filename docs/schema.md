@@ -32,3 +32,5 @@ public.search_notes — invoker RPC поиска по личным заметк�
 ## Дата заметки в календаре
 
 Миграция 20261103152842_calendar_note_dates.sql добавляет nullable notes.scheduled_on типа date и индекс (user_id,scheduled_on). Это выбранный календарный день без преобразования часового пояса. При null используется локальная дата created_at. Политики владения notes продолжают защищать весь ряд, включая новую колонку.
+
+Trace: миграция 20261104090022_note_cover добавляет notes.cover nullable text с CHECK (NULL или 'memory'). Обложку выбирает сам пользователь. Права таблицы и существующие owner RLS-политики не меняются; search_notes возвращает актуальный тип public.notes вместе с cover.

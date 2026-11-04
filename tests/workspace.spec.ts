@@ -70,7 +70,7 @@ for (const width of [1440, 390])
     await page.goto("/");
     await expect(
       page.getByRole("heading", {
-        name: "Здравствуйте, Тестовый пользователь.",
+        name: /Ваши мысли/,
       }),
     ).toBeVisible();
     await page.screenshot({

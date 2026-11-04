@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   FileText,
   CalendarDays,
@@ -19,46 +19,34 @@ export function Dashboard({ data, own, shared }: any) {
   const [text, setText] = useState(""),
     [busy, setBusy] = useState(false),
     [saved, setSaved] = useState(false),
-    [note, setNote] = useState<any>(null),
-    [counts, setCounts] = useState<(number | null)[]>([]);
-  useEffect(() => {
-    let alive = true;
-    shared.run(async () => {
-      const responses = await Promise.all(
-        ["notes", "events", "friendships"].map((t) => {
-          let q = db.from(t).select("*", { count: "exact", head: true });
-          if (t === "friendships") q = q.eq("status", "accepted");
-          return q;
-        }),
-      );
-      for (const r of responses) if (r.error) throw r.error;
-      if (alive) setCounts(responses.map((r) => r.count));
-    });
-    return () => {
-      alive = false;
-    };
-  }, [data.notes, data.events, data.friendships]);
+    [note, setNote] = useState<any>(null);
   return (
     <div className="dashboard editorial-dashboard">
       <div className="dashboard-primary">
         <section className="welcome product-hero">
           <div className="hero-copy">
             <span className="eyebrow">MEMORA / ЛИЧНОЕ ПРОСТРАНСТВО</span>
-            <h1>Здравствуйте, {own?.display_name || "друг"}.</h1>
-            <p>Меньше переключений. Больше пространства для идей.</p>
-            <div className="hero-stats">
-              {[
-                [FileText, "Заметок"],
-                [CalendarDays, "Событий"],
-                [MessageCircle, "Друзей"],
-              ].map(([Icon, label]: any, i) => (
-                <span key={label}>
-                  <Icon size={16} />
-                  <strong>{counts[i] ?? "—"}</strong>
-                  {label}
-                </span>
-              ))}
-            </div>
+            <span className="trace-greeting">
+              Здравствуйте, {own?.display_name || "друг"}.
+            </span>
+            <h1>
+              Ваши мысли.
+              <br />
+              <span>Связанные воедино.</span>
+            </h1>
+            <p>
+              Не просто сохранить. Увидеть связи, найти смысл и сделать
+              следующий шаг.
+            </p>
+            <button
+              className="trace-hero-action"
+              onClick={() =>
+                setNote({ title: "", content: "", tags: [], favorite: false })
+              }
+            >
+              Зафиксировать мысль
+              <ArrowUpRight size={16} />
+            </button>
           </div>
           <MemorySculpture />
         </section>
@@ -87,7 +75,7 @@ export function Dashboard({ data, own, shared }: any) {
           <header className="section-head">
             <h2>
               <PenLine size={20} />
-              Сохранить мысль
+              Момент ясности начинается здесь.
             </h2>
             <span className="capture-label">Быстрая заметка</span>
           </header>

@@ -32,7 +32,10 @@ import { Avatar, Empty } from "./components/ui";
 import { ThemeProvider } from "./lib/theme";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { Mark } from "./components/Identity";
+import { CommandPalette } from "./components/CommandPalette";
+import { NoteEditor } from "./components/NoteEditor";
 import "./style.css";
+import "./trace.css";
 const nav = [
   ["home", "Главная", House],
   ["notes", "Заметки", FileText],
@@ -40,6 +43,8 @@ const nav = [
   ["chats", "Чаты и друзья", MessageCircle],
 ] as const;
 function App() {
+  const [commandOpen, setCommandOpen] = useState(false),
+    [commandNote, setCommandNote] = useState<any>(null);
   const [user, setUser] = useState<User | null>(null),
     [ready, setReady] = useState(false),
     [recovery, setRecovery] = useState(false),
@@ -50,6 +55,10 @@ function App() {
     [search, setSearch] = useState(""),
     [more, setMore] = useState<Record<string, boolean>>({}),
     [pageBusy, setPageBusy] = useState(false);
+  useEffect(() => {
+    setCommandOpen(false);
+    setCommandNote(null);
+  }, [user?.id]);
   const requestVersion = useRef(0);
   const sessionUser = useRef<string | undefined>(undefined);
   sessionUser.current = user?.id;
@@ -73,7 +82,7 @@ function App() {
         );
         if (field) {
           e.preventDefault();
-          field.focus();
+          setCommandOpen(true);
         }
       }
     };
@@ -208,12 +217,25 @@ function App() {
     search,
   };
   return (
-    <div className="app">
+    <div className="app trace-app">
       <aside className="sidebar">
         <a className="brand" href="#home">
-          <Mark /> MEMORA<span>2.0</span>
+          <Mark /> memora<span>2.0</span>
         </a>
-        <span className="workspace">ЛИЧНОЕ ПРОСТРАНСТВО</span>
+        <div className="trace-space">
+          <Avatar profile={own} />
+          <span>
+            {own?.display_name || "Ваше пространство"}
+            <small>Личный аккаунт</small>
+          </span>
+        </div>
+        <button
+          className="trace-sidebar-command"
+          onClick={() => setCommandOpen(true)}
+        >
+          <Search size={14} />
+          Найти или выполнить<kbd>⌘ K</kbd>
+        </button>
         <nav>
           {nav.map(([id, label, Icon]) => (
             <a
@@ -256,6 +278,13 @@ function App() {
             </kbd>
           </label>
           <div className="row">
+            <button
+              className="trace-command-trigger"
+              aria-label="Открыть командную панель"
+              onClick={() => setCommandOpen(true)}
+            >
+              <Search size={16} />
+            </button>
             <ThemeToggle />
             <a
               className="notification-button"
@@ -306,6 +335,26 @@ function App() {
             </details>
           </div>
         </header>
+        {commandOpen && data && (
+          <CommandPalette
+            notes={data.notes}
+            close={() => setCommandOpen(false)}
+            openNote={(n: any) => {
+              setCommandOpen(false);
+              setCommandNote(n);
+            }}
+          />
+        )}
+        {commandNote && data && (
+          <NoteEditor
+            note={commandNote}
+            close={() => setCommandNote(null)}
+            categories={data.categories}
+            userId={user.id}
+            run={run}
+            refresh={refresh}
+          />
+        )}
         <main className="content">
           {error && (
             <div className="error" role="alert">

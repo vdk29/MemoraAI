@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Star, Plus } from "lucide-react";
+import { Star, Plus, LayoutGrid, List } from "lucide-react";
 import { db, result, date } from "../lib/supabase";
 import { NoteEditor } from "../components/NoteEditor";
 import { Empty } from "../components/ui";
@@ -13,6 +13,7 @@ export function Notes({
   compact = false,
   search = "",
 }: any) {
+  const [view, setView] = useState("grid");
   const [edit, setEdit] = useState<any>(null),
     [sort, setSort] = useState("updated_at"),
     [filter, setFilter] = useState(""),
@@ -165,10 +166,45 @@ export function Notes({
           </button>
         </div>
       )}
+      <div
+        className="trace-view-controls"
+        role="group"
+        aria-label="Отображение заметок"
+      >
+        <button
+          aria-label="Карточки"
+          aria-pressed={view === "grid"}
+          onClick={() => setView("grid")}
+        >
+          <LayoutGrid size={15} />
+        </button>
+        <button
+          aria-label="Список"
+          aria-pressed={view === "list"}
+          onClick={() => setView("list")}
+        >
+          <List size={16} />
+        </button>
+      </div>
       {items.length ? (
-        <div className={compact ? "notes-grid recent-list" : "notes-grid"}>
+        <div
+          className={
+            "notes-grid trace-notes " +
+            (view === "list" ? "trace-list" : "trace-grid")
+          }
+        >
           {items.map((n: any) => (
-            <article className="note" key={n.id}>
+            <article
+              className={"note " + (n.cover === "memory" ? "has-cover" : "")}
+              key={n.id}
+            >
+              {n.cover === "memory" && (
+                <button
+                  className="trace-note-cover"
+                  aria-label={"Открыть заметку " + n.title}
+                  onClick={() => setEdit({ ...n })}
+                />
+              )}
               <header>
                 <span className="tag">
                   {categories.find((c: any) => c.id === n.category_id)?.name ||
