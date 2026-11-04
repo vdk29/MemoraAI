@@ -1,0 +1,14 @@
+{
+  "date": "2026-11-04",
+  "checks": [
+    "a/dark/desktop: layout, command search/action, typing, save/reload, calendar, chat, empty, auth",
+    "a/dark/iphone: layout, command search/action, typing, save/reload, calendar, chat, empty, auth",
+    "a/light/desktop: layout, command search/action, typing, save/reload, calendar, chat, empty, auth",
+    "a/light/iphone: layout, command search/action, typing, save/reload, calendar, chat, empty, auth",
+    "b/dark/desktop: layout, command search/action, typing, save/reload, calendar, chat, empty, auth",
+    "b/dark/iphone: layout, command search/action, typing, save/reload, calendar, chat, empty, auth",
+    "b/light/desktop: layout, command search/action, typing, save/reload, calendar, chat, empty, auth",
+    "b/light/iphone: layout, command search/action, typing, save/reload, calendar, chat, empty, auth"
+  ],
+  "backend": "none; standalone local demonstration; no Supabase requests"
+}

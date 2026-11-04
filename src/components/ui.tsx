@@ -1,0 +1,141 @@
+import {
+  useEffect,
+  useLayoutEffect,
+  useState,
+  useRef,
+  type ReactNode,
+} from "react";
+import { createPortal } from "react-dom";
+import { X, FileText } from "lucide-react";
+import { db, result } from "../lib/supabase";
+export function Empty({
+  title,
+  children,
+}: {
+  title: string;
+  children?: ReactNode;
+}) {
+  return (
+    <div className="empty trace-empty">
+      <FileText size={28} />
+      <h3>{title}</h3>
+      <p>{children || "Здесь появятся ваши записи."}</p>
+    </div>
+  );
+}
+export function Modal({
+  title,
+  children,
+  close,
+}: {
+  title: string;
+  children: ReactNode;
+  close: () => void;
+}) {
+  const [closing, setClosing] = useState(false);
+  const closeTimer = useRef<number | undefined>(undefined);
+  const dialog = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    const panel = dialog.current;
+    const source = (document.activeElement as HTMLElement)?.closest(".note");
+    if (!panel?.querySelector(".trace-note-editor") || !source) return;
+    const a = source.getBoundingClientRect(),
+      b = panel.getBoundingClientRect();
+    const clamp = (v: number) => Math.max(-180, Math.min(180, v));
+    panel.style.setProperty(
+      "--trace-open-x",
+      clamp(a.x + a.width / 2 - b.x - b.width / 2) + "px",
+    );
+    panel.style.setProperty(
+      "--trace-open-y",
+      clamp(a.y + a.height / 2 - b.y - b.height / 2) + "px",
+    );
+    panel.classList.add("trace-spatial");
+  }, []);
+  const closeRef = useRef(close);
+  closeRef.current = close;
+  const requestClose = () => {
+    if (closeTimer.current !== undefined) return;
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      closeRef.current();
+      return;
+    }
+    setClosing(true);
+    closeTimer.current = window.setTimeout(() => closeRef.current(), 130);
+  };
+  useEffect(() => {
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const old = document.activeElement as HTMLElement;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") requestClose();
+      if (e.key === "Tab") {
+        const els = Array.from(
+          document.querySelectorAll<HTMLElement>(
+            '[role="dialog"] button,[role="dialog"] input,[role="dialog"] textarea,[role="dialog"] select',
+          ),
+        );
+        const first = els[0],
+          last = els.at(-1);
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last?.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first?.focus();
+        }
+      }
+    };
+    document.addEventListener("keydown", handler);
+    document.querySelector<HTMLElement>('[role="dialog"] input')?.focus();
+    return () => {
+      window.clearTimeout(closeTimer.current);
+      document.removeEventListener("keydown", handler);
+      document.body.style.overflow = overflow;
+      old?.focus();
+    };
+  }, []);
+  return createPortal(
+    <div className={"overlay" + (closing ? " is-closing" : "")}>
+      <section
+        ref={dialog}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        className="modal"
+      >
+        <header>
+          <h2>{title}</h2>
+          <button aria-label="Закрыть" onClick={requestClose}>
+            <X size={20} />
+          </button>
+        </header>
+        {children}
+      </section>
+    </div>,
+    document.body,
+  );
+}
+export function Avatar({ profile }: { profile: any }) {
+  const [url, setUrl] = useState("");
+  useEffect(() => {
+    let alive = true;
+    setUrl("");
+    if (profile?.avatar_path)
+      result(
+        db.storage.from("avatars").createSignedUrl(profile.avatar_path, 3600),
+      )
+        .then((d) => {
+          if (alive) setUrl(d?.signedUrl || "");
+        })
+        .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [profile?.avatar_path]);
+  return url ? (
+    <img className="avatar" src={url} alt="Аватар" loading="lazy" />
+  ) : (
+    <span className="avatar">{profile?.display_name?.[0] || "М"}</span>
+  );
+}

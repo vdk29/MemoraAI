@@ -1,0 +1,910 @@
+/* Trace materials: one lighting system for the shell, raised controls and social space. */
+:root,
+[data-theme="light"] {
+  --material-highlight: #fff;
+  --material-shadow: #26334b0a;
+  --material-shadow-deep: #26334b13;
+  --material-sheen: #ffffffa6;
+  --material-grid: #384f7405;
+  --chat-paper: #f7f8fb;
+}
+[data-theme="dark"] {
+  --material-highlight: #ffffff0c;
+  --material-shadow: #00000021;
+  --material-shadow-deep: #0000003b;
+  --material-sheen: #ffffff03;
+  --material-grid: #a1b5f104;
+  --chat-paper: #171a21;
+}
+.trace-app .workspace {
+  box-shadow: 0 16px 40px var(--material-shadow);
+  border-radius: 16px;
+}
+.trace-app .topbar {
+  background:
+    linear-gradient(140deg, var(--material-sheen), transparent 65%),
+    var(--surface);
+  box-shadow: inset 0 1px var(--material-highlight);
+}
+.trace-app .panel,
+.trace-app .quick-capture,
+.trace-app .month-surface,
+.trace-app .day-agenda,
+.trace-app .note,
+.trace-app .profile-card {
+  background-image: linear-gradient(
+    135deg,
+    var(--material-sheen),
+    transparent 55%
+  );
+  box-shadow:
+    inset 0 1px var(--material-highlight),
+    0 2px 3px var(--material-shadow),
+    0 14px 28px -18px var(--material-shadow-deep);
+}
+.trace-app .note {
+  transition:
+    border-color 0.2s var(--ease),
+    box-shadow 0.25s var(--ease),
+    transform 0.25s var(--ease);
+}
+@media (hover: hover) {
+  .trace-app .note:hover {
+    transform: translateY(-3px);
+    border-color: var(--line-strong);
+    box-shadow:
+      inset 0 1px var(--material-highlight),
+      0 8px 12px -8px var(--material-shadow),
+      0 20px 35px -20px var(--material-shadow-deep);
+  }
+}
+.trace-app .primary,
+.auth .primary {
+  box-shadow:
+    inset 0 1px #ffffff32,
+    0 2px 3px #00000014,
+    0 5px 16px -8px var(--accent);
+  border: 1px solid #ffffff15;
+}
+.trace-app .sidebar nav a.active {
+  box-shadow:
+    inset 0 1px var(--material-highlight),
+    0 2px 5px var(--material-shadow);
+}
+.trace-app .trace-space {
+  background: linear-gradient(145deg, var(--material-sheen), transparent);
+  box-shadow: inset 0 1px var(--material-highlight);
+}
+.trace-app .product-hero {
+  box-shadow:
+    inset 0 1px #ffffff12,
+    0 8px 24px -14px var(--material-shadow-deep);
+}
+.trace-app .welcome:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid #ffffff05;
+  pointer-events: none;
+}
+.trace-app .favorites-ribbon button {
+  background-image: linear-gradient(var(--material-sheen), transparent);
+  box-shadow: inset 0 1px var(--material-highlight);
+}
+.trace-app .social-v3 {
+  grid-template-columns: 340px minmax(0, 1fr);
+  height: min(790px, calc(100dvh - 175px));
+  min-height: 580px;
+  box-shadow:
+    inset 0 1px var(--material-highlight),
+    0 16px 45px -25px var(--material-shadow-deep);
+}
+.trace-app .social-v3 > .panel {
+  padding: 0;
+  min-width: 0;
+}
+.social-directory {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.social-heading {
+  padding: 25px 23px 0;
+}
+.social-heading .eyebrow {
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  margin-bottom: 13px;
+  display: block;
+}
+.social-heading > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.trace-app .social-heading h2 {
+  font-size: 19px;
+  letter-spacing: -0.6px;
+  margin: 0;
+  font-weight: 600;
+}
+.social-heading > p {
+  font-size: 10px;
+  line-height: 1.7;
+  margin: 8px 0 19px;
+  color: var(--muted);
+}
+.trace-app .social-add {
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: var(--surface-3);
+  box-shadow: inset 0 1px var(--material-highlight);
+}
+.social-tabs {
+  display: flex;
+  gap: 4px;
+  border: 1px solid var(--line);
+  padding: 4px;
+  border-radius: 9px;
+  margin: 0 21px 9px;
+  background: var(--surface);
+  box-shadow: inset 0 2px 4px var(--material-shadow);
+}
+.social-tabs > button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background: none;
+  border: 1px solid transparent;
+  box-shadow: none;
+  font-size: 11px;
+  min-height: 35px;
+  padding: 7px;
+}
+.social-tabs > button[aria-selected="true"] {
+  background: var(--surface-3);
+  border-color: var(--line);
+  color: var(--text);
+  box-shadow:
+    inset 0 1px var(--material-highlight),
+    0 2px 3px var(--material-shadow);
+}
+.social-tabs b {
+  font-size: 9px;
+  min-width: 17px;
+  border-radius: 5px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.social-directory-scroll {
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+  padding: 6px 15px 24px;
+  scrollbar-width: thin;
+}
+.social-group-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 19px 8px 10px;
+  color: var(--muted);
+}
+.trace-app .social-group-label h3 {
+  font-size: 10px;
+  font-weight: 500;
+  margin: 0;
+  letter-spacing: 0.3px;
+}
+.social-group-label > span {
+  font-size: 9px;
+  background: var(--surface);
+  min-width: 21px;
+  text-align: center;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 2px;
+}
+.trace-app .social-v3 .trace-conversation {
+  padding: 14px 11px;
+  border: 1px solid transparent;
+  margin-bottom: 5px;
+  gap: 11px;
+  min-height: 72px;
+}
+.trace-app .social-v3 .trace-conversation.selected {
+  border-color: var(--line-strong);
+  background:
+    linear-gradient(140deg, var(--material-sheen), transparent),
+    var(--accent-soft);
+  box-shadow:
+    inset 0 1px var(--material-highlight),
+    0 4px 8px var(--material-shadow);
+}
+.social-v3 .trace-conversation > .avatar {
+  flex: 0 0 39px;
+  height: 39px;
+  width: 39px;
+  border-radius: 14px;
+}
+.trace-app .trace-conversation > span.conversation-meta {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+.conversation-meta time {
+  font-size: 8px;
+  white-space: nowrap;
+  color: var(--muted);
+}
+.conversation-meta b {
+  font-size: 9px;
+  min-width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.social-quick-friend {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+  padding: 9px 10px;
+  font-size: 11px;
+  text-align: left;
+}
+.social-quick-friend > span:not(.avatar) {
+  flex: 1;
+}
+.social-quick-friend .avatar {
+  width: 30px;
+  height: 30px;
+  font-size: 10px;
+  border-radius: 10px;
+}
+.people-search {
+  margin: 10px 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  padding: 0 11px;
+  background: var(--input);
+  color: var(--muted);
+  box-shadow: inset 0 2px 4px var(--material-shadow);
+}
+.people-search:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.trace-app .people-search input {
+  border: 0;
+  background: none;
+  box-shadow: none;
+  outline: 0;
+  padding: 12px 0;
+  min-width: 0;
+  width: 100%;
+  font-size: 11px;
+}
+.social-hint,
+.social-quiet {
+  font-size: 10px;
+  line-height: 1.7;
+  padding: 0 9px;
+  color: var(--muted);
+}
+.social-person {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 9px;
+  border-bottom: 1px solid var(--line);
+}
+.social-person > a {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+}
+.social-person > a > span:not(.avatar) {
+  min-width: 0;
+}
+.social-person .avatar {
+  border-radius: 12px;
+  width: 36px;
+  height: 36px;
+}
+.social-person strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.social-person small {
+  display: block;
+  font-size: 9px;
+  line-height: 1.5;
+  margin-top: 4px;
+  color: var(--muted);
+}
+.social-person button,
+.social-inline-empty button {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  min-height: 33px;
+}
+.social-person .social-write,
+.social-inline-empty button {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.request-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.social-person.search-result,
+.social-person.request-card {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  margin: 9px 4px;
+}
+.social-person .request-pending {
+  color: var(--muted);
+}
+.social-self {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 17px 22px;
+  border-top: 1px solid var(--line-strong);
+  background: var(--surface);
+  box-shadow: 0 -6px 16px -12px var(--material-shadow-deep);
+}
+.social-self > span:not(.avatar) {
+  flex: 1;
+  min-width: 0;
+}
+.social-self strong {
+  font-weight: 500;
+  font-size: 11px;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.social-self small {
+  font-size: 9px;
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+}
+.social-self button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  min-height: 32px;
+  padding: 0;
+}
+.social-inline-empty {
+  padding: 24px 12px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  color: var(--muted);
+}
+.social-inline-empty > svg {
+  color: var(--accent);
+  margin-bottom: 13px;
+  stroke-width: 1.4;
+}
+.social-inline-empty strong {
+  font-size: 12px;
+  color: var(--text);
+  font-weight: 500;
+}
+.social-inline-empty p {
+  font-size: 11px;
+  line-height: 1.8;
+  margin: 8px 0 16px;
+}
+.social-notice,
+.social-error,
+.social-loading {
+  font-size: 11px;
+  line-height: 1.7;
+  margin: 9px 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.social-notice {
+  color: var(--accent);
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line-strong);
+  background: var(--accent-soft);
+  animation: trace-material-in 0.25s var(--ease) both;
+}
+.social-error {
+  color: var(--danger);
+  background: var(--danger-soft);
+  padding: 10px;
+  border-radius: 8px;
+  flex-wrap: wrap;
+}
+.social-error button {
+  font-size: 10px;
+  min-height: 30px;
+  padding: 5px 8px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.social-loading {
+  color: var(--muted);
+}
+.trace-app .social-v3 .chat {
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--chat-paper);
+}
+.trace-app .social-v3 .chat-header {
+  padding: 21px 26px;
+  margin: 0;
+  border-bottom: 1px solid var(--line-strong);
+  background:
+    linear-gradient(135deg, var(--material-sheen), transparent), var(--surface);
+  box-shadow: 0 4px 12px -10px var(--material-shadow-deep);
+  gap: 10px;
+  z-index: 1;
+}
+.chat-peer {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+.chat-peer .avatar {
+  width: 39px;
+  height: 39px;
+  border-radius: 13px;
+}
+.chat-peer > span {
+  min-width: 0;
+}
+.trace-app .chat-peer h2 {
+  font-size: 14px;
+  margin: 0 0 5px;
+  font-weight: 600;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.chat-peer small {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.4;
+}
+.connection-dot {
+  display: block;
+  width: 5px;
+  height: 5px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.connection-dot.connected {
+  background: var(--accent);
+}
+.chat-profile-link {
+  padding: 8px;
+}
+.trace-app .chat-back {
+  display: none;
+}
+.trace-app .social-v3 .messages {
+  padding: 22px 26px;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background-image: radial-gradient(
+    circle,
+    var(--material-grid) 1px,
+    transparent 1px
+  );
+  background-size: 16px 16px;
+  scrollbar-width: thin;
+}
+.trace-app .social-v3 .bubble {
+  max-width: 78%;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  box-shadow:
+    inset 0 1px var(--material-highlight),
+    0 2px 4px var(--material-shadow);
+  border-radius: 13px 13px 13px 4px;
+  margin-bottom: 12px;
+  padding: 11px 15px;
+  font-size: 12px;
+  line-height: 1.75;
+}
+.trace-app .social-v3 .bubble.mine {
+  border-radius: 13px 13px 4px 13px;
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.social-v3 .bubble small {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  font-size: 8px;
+  margin-top: 6px;
+  color: var(--muted);
+}
+.trace-app .social-v3 .trace-date-divider {
+  font-size: 9px;
+  margin: 5px 0 25px;
+  background: var(--surface);
+  box-shadow:
+    inset 0 1px var(--material-highlight),
+    0 2px 3px var(--material-shadow);
+}
+.composer-area {
+  padding: 0 22px 15px;
+  background: var(--chat-paper);
+}
+.trace-app .social-v3 .composer {
+  padding: 6px;
+  margin: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  align-items: flex-end;
+  background: var(--surface-2);
+  box-shadow:
+    inset 0 1px var(--material-highlight),
+    0 6px 12px -8px var(--material-shadow-deep);
+}
+.trace-app .social-v3 .composer:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--line-strong));
+}
+.trace-app .social-v3 .composer textarea {
+  border: 0;
+  box-shadow: none;
+  outline: 0;
+  background: transparent;
+  resize: vertical;
+  min-height: 49px;
+  max-height: 150px;
+  font-size: 12px;
+  padding: 13px 12px;
+}
+.trace-app .social-v3 .composer button {
+  border-radius: 8px;
+  padding: 12px;
+  margin: 0;
+  min-height: 43px;
+}
+.composer-footnote {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 8px;
+  padding-top: 11px;
+}
+.composer-footnote small {
+  margin-left: auto;
+  font-size: 8px;
+}
+.composer-area > .social-error {
+  margin: 0 0 10px;
+}
+.chat-readonly {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.chat-readonly > svg {
+  flex-shrink: 0;
+}
+.chat-readonly button {
+  font-size: 10px;
+  flex-shrink: 0;
+}
+.chat-start {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin: auto;
+  color: var(--muted);
+  padding: 40px 15px;
+}
+.chat-start > .avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  font-size: 24px;
+  margin-bottom: 17px;
+}
+.chat-start strong {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+.chat-start p {
+  font-size: 11px;
+}
+.chat-empty {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+  padding: 45px 24px;
+  background-image: radial-gradient(
+    ellipse at 50% 32%,
+    var(--accent-soft),
+    transparent 60%
+  );
+}
+.chat-empty-art {
+  width: 140px;
+  height: 132px;
+  position: relative;
+  margin-bottom: 26px;
+}
+.chat-empty-art > span {
+  width: 91px;
+  height: 91px;
+  display: grid;
+  place-items: center;
+  position: absolute;
+  left: 21px;
+  top: 17px;
+  border-radius: 28px;
+  transform: rotate(-8deg);
+  color: var(--accent);
+  border: 1px solid var(--line-strong);
+  background:
+    linear-gradient(140deg, var(--material-sheen), transparent),
+    var(--surface-2);
+  box-shadow:
+    inset 0 1px var(--material-highlight),
+    0 14px 22px -9px var(--material-shadow-deep);
+}
+.chat-empty-art i,
+.chat-empty-art b {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 37px;
+  height: 37px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--surface-3);
+  color: var(--text-secondary);
+  box-shadow:
+    inset 0 1px var(--material-highlight),
+    0 5px 8px var(--material-shadow);
+}
+.chat-empty-art i {
+  left: 2px;
+  bottom: 2px;
+  transform: rotate(9deg);
+}
+.chat-empty-art b {
+  right: 0;
+  top: 0;
+  transform: rotate(8deg);
+  color: var(--accent);
+}
+.chat-empty .eyebrow {
+  font-size: 8px;
+  letter-spacing: 1.8px;
+  color: var(--muted);
+}
+.trace-app .chat-empty h2 {
+  font-size: 28px;
+  letter-spacing: -1px;
+  line-height: 1.25;
+  margin: 14px 0 3px;
+  font-weight: 550;
+}
+.chat-empty p {
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--muted);
+  margin-bottom: 25px;
+}
+.chat-empty .primary {
+  gap: 9px;
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+}
+.chat-empty > small {
+  margin-top: 30px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9px;
+  color: var(--muted);
+}
+.chat-load-older {
+  align-self: center;
+  font-size: 10px;
+}
+.profile-social-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  margin-top: 22px;
+}
+.profile-social-actions small {
+  font-size: 11px;
+  color: var(--muted);
+}
+.is-spinning {
+  animation: operation-spin 1.1s linear infinite;
+}
+@keyframes operation-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (max-width: 1100px) {
+  .trace-app .social-v3 {
+    grid-template-columns: 300px minmax(0, 1fr);
+  }
+  .composer-footnote small {
+    display: none;
+  }
+  .trace-app .social-v3 .composer button > span {
+    display: none;
+  }
+}
+@media (max-width: 760px) {
+  .trace-app .social-v3 {
+    display: flex;
+    min-height: 0;
+    height: auto;
+    overflow: hidden;
+    grid-template-columns: 1fr;
+  }
+  .trace-app .social-v3 .social-directory {
+    min-height: min(680px, calc(100dvh - 180px));
+    max-height: none;
+    border-bottom: 0;
+  }
+  .trace-app .social-v3 .social-directory-scroll {
+    max-height: none;
+  }
+  .trace-app .social-v3.has-active .social-directory {
+    display: none;
+  }
+  .trace-app .social-v3:not(.has-active) .chat {
+    display: none;
+  }
+  .trace-app .social-v3.has-active .chat {
+    height: calc(100dvh - 167px - env(safe-area-inset-bottom));
+    min-height: 350px;
+  }
+  .trace-app .chat-back {
+    display: grid;
+    padding: 7px;
+    place-items: center;
+    min-width: 32px;
+  }
+  .trace-app .social-v3 .chat-header {
+    padding: 13px 12px;
+  }
+  .trace-app .chat-peer h2 {
+    font-size: 13px;
+  }
+  .chat-peer .avatar {
+    width: 33px;
+    height: 33px;
+    border-radius: 11px;
+  }
+  .chat-peer {
+    gap: 9px;
+  }
+  .chat-peer small {
+    font-size: 8px;
+    max-width: 220px;
+  }
+  .trace-app .social-v3 .messages {
+    padding: 18px 13px;
+  }
+  .trace-app .social-v3 .bubble {
+    max-width: 87%;
+    font-size: 13px;
+  }
+  .composer-area {
+    padding: 0 10px 12px;
+  }
+  .trace-app .social-v3 .composer {
+    gap: 3px;
+  }
+  .trace-app .social-v3 .composer textarea {
+    font-size: 16px;
+    min-height: 45px;
+    max-height: 110px;
+    padding: 10px 8px;
+  }
+  .trace-app .social-v3 .composer button {
+    padding: 11px;
+  }
+  .composer-footnote {
+    font-size: 8px;
+    justify-content: center;
+    padding-top: 8px;
+  }
+  .people-search input {
+    font-size: 16px !important;
+  }
+  .social-person button {
+    min-height: 39px;
+  }
+  .social-tabs button {
+    min-height: 40px;
+  }
+  .chat-readonly {
+    flex-wrap: wrap;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .trace-app .note,
+  .trace-app .note:hover {
+    transform: none;
+    transition: none;
+  }
+  .is-spinning {
+    animation: none;
+  }
+}

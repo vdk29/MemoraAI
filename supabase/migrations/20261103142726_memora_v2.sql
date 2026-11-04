@@ -1,0 +1,86 @@
+create schema if not exists private;
+create table public.profiles(id uuid primary key references auth.users on delete cascade, display_name text not null default 'Участник' check(length(display_name) between 1 and 80), bio text not null default '' check(length(bio)<=1000), avatar_path text, discoverable boolean not null default true, created_at timestamptz not null default now());
+create table public.settings(user_id uuid primary key references public.profiles on delete cascade, notify_messages boolean not null default true, notify_friends boolean not null default true);
+create table public.categories(id uuid primary key default gen_random_uuid(),user_id uuid not null references public.profiles on delete cascade,name text not null check(length(name) between 1 and 60),unique(user_id,name),unique(id,user_id));
+create table public.notes(id uuid primary key default gen_random_uuid(),user_id uuid not null references public.profiles on delete cascade,title text not null check(length(title) between 1 and 200),content text not null default '' check(length(content)<=100000),category_id uuid,tags text[] not null default '{}',favorite boolean not null default false,created_at timestamptz not null default now(),updated_at timestamptz not null default now(),foreign key(category_id,user_id) references public.categories(id,user_id));
+create table public.events(id uuid primary key default gen_random_uuid(),user_id uuid not null references public.profiles on delete cascade,title text not null check(length(title) between 1 and 200),description text not null default '',starts_at timestamptz not null,ends_at timestamptz not null,timezone text not null default 'UTC',check(ends_at>starts_at));
+create table public.friendships(id uuid primary key default gen_random_uuid(),requester_id uuid not null references public.profiles on delete cascade,recipient_id uuid not null references public.profiles on delete cascade,status text not null default 'pending' check(status in ('pending','accepted')),created_at timestamptz not null default now(),check(requester_id<>recipient_id));
+create unique index friendship_pair on public.friendships(least(requester_id,recipient_id),greatest(requester_id,recipient_id));
+create table public.conversations(id uuid primary key default gen_random_uuid(),user_a uuid not null references public.profiles on delete cascade,user_b uuid not null references public.profiles on delete cascade,created_at timestamptz not null default now(),check(user_a<>user_b));
+create unique index conversation_pair on public.conversations(least(user_a,user_b),greatest(user_a,user_b));
+create table public.messages(id uuid primary key default gen_random_uuid(),conversation_id uuid not null references public.conversations on delete cascade,sender_id uuid not null references public.profiles on delete cascade,body text not null check(length(trim(body)) between 1 and 8000),created_at timestamptz not null default now());
+create table public.read_receipts(conversation_id uuid references public.conversations on delete cascade,user_id uuid references public.profiles on delete cascade,read_at timestamptz not null default now(),primary key(conversation_id,user_id));
+create table public.notifications(id uuid primary key default gen_random_uuid(),user_id uuid not null references public.profiles on delete cascade,actor_id uuid references public.profiles on delete cascade,kind text not null,reference_id uuid,read boolean not null default false,created_at timestamptz not null default now());
+create index notes_owner_date on public.notes(user_id,updated_at desc);
+create index events_owner_date on public.events(user_id,starts_at);
+create index messages_history on public.messages(conversation_id,created_at desc);
+create index notifications_owner on public.notifications(user_id,created_at desc);
+create index friends_recipient on public.friendships(recipient_id,status);
+create index friends_requester on public.friendships(requester_id,status);
+create index conversations_a on public.conversations(user_a);
+create index conversations_b on public.conversations(user_b);
+create index messages_sender on public.messages(sender_id);
+create index notifications_actor on public.notifications(actor_id);
+create index notes_category on public.notes(category_id,user_id);
+create index receipts_user on public.read_receipts(user_id);
+create function private.bootstrap() returns trigger language plpgsql security definer set search_path='' as $$ begin
+ insert into public.profiles(id) values(new.id);insert into public.settings(user_id) values(new.id);return new;end $$;
+create trigger bootstrap after insert on auth.users for each row execute function private.bootstrap();
+create function private.touch_note() returns trigger language plpgsql set search_path='' as $$ begin new.updated_at=now();return new;end $$;
+create trigger touch_note before update on public.notes for each row execute function private.touch_note();
+-- Server-owned notifications: clients cannot forge actors or recipients.
+create function private.notify() returns trigger language plpgsql security definer set search_path='' as $$ declare recipient uuid; k text;begin
+ if auth.uid() is null then return new;end if;
+ if tg_table_name='messages' then
+ select case when user_a=new.sender_id then user_b else user_a end into recipient from public.conversations where id=new.conversation_id;
+ if not exists(select 1 from public.settings where user_id=recipient and notify_messages) then return new;end if;
+ insert into public.notifications(user_id,actor_id,kind,reference_id) values(recipient,new.sender_id,'message',new.conversation_id);
+ else
+ if tg_op='INSERT' then recipient=new.recipient_id;k='friend_request';else if old.status=new.status then return new;end if;recipient=new.requester_id;k='friend_accepted';end if;
+ if exists(select 1 from public.settings where user_id=recipient and notify_friends) then
+ insert into public.notifications(user_id,actor_id,kind,reference_id) values(recipient,auth.uid(),k,new.id);end if;
+ end if;return new;end $$;
+create trigger message_notification after insert on public.messages for each row execute function private.notify();
+create trigger friend_notification after insert or update on public.friendships for each row execute function private.notify();
+revoke all on schema private from public;
+revoke execute on all functions in schema private from public,anon,authenticated;
+alter table public.profiles enable row level security;
+alter table public.settings enable row level security;
+alter table public.categories enable row level security;
+alter table public.notes enable row level security;
+alter table public.events enable row level security;
+alter table public.friendships enable row level security;
+alter table public.conversations enable row level security;
+alter table public.messages enable row level security;
+alter table public.read_receipts enable row level security;
+alter table public.notifications enable row level security;
+create policy owner on public.settings for all to authenticated using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
+create policy owner on public.categories for all to authenticated using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
+create policy owner on public.notes for all to authenticated using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
+create policy owner on public.events for all to authenticated using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
+create policy profile_read on public.profiles for select to authenticated using(true);
+create policy profile_edit on public.profiles for update to authenticated using(id=(select auth.uid())) with check(id=(select auth.uid()));
+create policy friends_read on public.friendships for select to authenticated using((select auth.uid()) in(requester_id,recipient_id));
+create policy friends_insert on public.friendships for insert to authenticated with check(requester_id=(select auth.uid()) and status='pending' and exists(select 1 from public.profiles where id=recipient_id and discoverable));
+create policy friends_accept on public.friendships for update to authenticated using(recipient_id=(select auth.uid()) and status='pending') with check(recipient_id=(select auth.uid()) and status='accepted');
+-- Column grants prevent changing participants when accepting.
+create policy friends_delete on public.friendships for delete to authenticated using((select auth.uid()) in(requester_id,recipient_id));
+create policy conversations_read on public.conversations for select to authenticated using((select auth.uid()) in(user_a,user_b));
+create policy conversations_insert on public.conversations for insert to authenticated with check((select auth.uid()) in(user_a,user_b) and exists(select 1 from public.friendships f where f.status='accepted' and least(f.requester_id,f.recipient_id)=least(user_a,user_b) and greatest(f.requester_id,f.recipient_id)=greatest(user_a,user_b)));
+create policy messages_read on public.messages for select to authenticated using(exists(select 1 from public.conversations c where c.id=conversation_id and (select auth.uid()) in(c.user_a,c.user_b)));
+create policy messages_insert on public.messages for insert to authenticated with check(sender_id=(select auth.uid()) and exists(select 1 from public.conversations c join public.friendships f on least(f.requester_id,f.recipient_id)=least(c.user_a,c.user_b) and greatest(f.requester_id,f.recipient_id)=greatest(c.user_a,c.user_b) and f.status='accepted' where c.id=conversation_id and (select auth.uid()) in(c.user_a,c.user_b)));
+create policy receipts on public.read_receipts for all to authenticated using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()) and exists(select 1 from public.conversations c where c.id=conversation_id and (select auth.uid()) in(c.user_a,c.user_b)));
+create policy notifications_read on public.notifications for select to authenticated using(user_id=(select auth.uid()));
+create policy notifications_edit on public.notifications for update to authenticated using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
+grant select,update on public.profiles to authenticated;
+grant select,insert,update,delete on public.settings,public.categories,public.notes,public.events,public.read_receipts to authenticated;
+grant select,insert,delete on public.friendships to authenticated;
+grant update(status) on public.friendships to authenticated;
+grant select,insert on public.conversations,public.messages to authenticated;
+grant select,update(read) on public.notifications to authenticated;
+insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types) values('avatars','avatars',false,2097152,array['image/jpeg','image/png','image/webp']);
+create policy avatar_read on storage.objects for select to authenticated using(bucket_id='avatars');
+create policy avatar_insert on storage.objects for insert to authenticated with check(bucket_id='avatars' and (storage.foldername(name))[1]=(select auth.uid())::text);
+create policy avatar_update on storage.objects for update to authenticated using(bucket_id='avatars' and (storage.foldername(name))[1]=(select auth.uid())::text) with check(bucket_id='avatars' and (storage.foldername(name))[1]=(select auth.uid())::text);
+create policy avatar_delete on storage.objects for delete to authenticated using(bucket_id='avatars' and (storage.foldername(name))[1]=(select auth.uid())::text);
+alter publication supabase_realtime add table public.messages,public.notifications,public.friendships;

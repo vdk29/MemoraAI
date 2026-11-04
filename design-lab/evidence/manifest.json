@@ -1,0 +1,235 @@
+{
+  "date": "2026-11-04",
+  "files": [
+    {
+      "path": "a-dark-desktop-auth.png",
+      "bytes": 396165,
+      "sha256": "dcd3741f4edb6a13d5fabd26d115fad2efe7ffb3e6ccff9a937fb589d3ae91a4"
+    },
+    {
+      "path": "a-dark-desktop-commands.png",
+      "bytes": 133753,
+      "sha256": "57bf775b246657db86d70919594013c37ed8fa5c41b3bf68a935f3ae41367e35"
+    },
+    {
+      "path": "a-dark-desktop-empty.png",
+      "bytes": 153516,
+      "sha256": "e5a42658ad626d84421ceaffe8623b5b49115a94ec55b20a15e80a1b9426336b"
+    },
+    {
+      "path": "a-dark-desktop-home.png",
+      "bytes": 169680,
+      "sha256": "6bfe9f226a068ccafad855c801628f3ec48b5b8042b4a2502487fff5df571ff3"
+    },
+    {
+      "path": "a-dark-desktop-note.png",
+      "bytes": 145820,
+      "sha256": "3599d313b2d371f2905c7f53bb5cab1e530dda6d1d12ce6afe8966b1d0ec6066"
+    },
+    {
+      "path": "a-dark-iphone-auth.png",
+      "bytes": 123433,
+      "sha256": "f35781633863602a268220f40a5d640af011520a6ba73a733cb87a0b8af3af3b"
+    },
+    {
+      "path": "a-dark-iphone-commands.png",
+      "bytes": 50829,
+      "sha256": "921b6ba324ff535332eb4cd1874cbbc7fa17a66b3c175ba6b38b019a383ea224"
+    },
+    {
+      "path": "a-dark-iphone-empty.png",
+      "bytes": 68787,
+      "sha256": "eb1d9fd1a7b9e84263a850dd1a1adc215df499e7ff174afdaa78659f669219af"
+    },
+    {
+      "path": "a-dark-iphone-home.png",
+      "bytes": 69269,
+      "sha256": "9ebf626bd85a52447693aaa887c0dd487f93384930ab209e5303c98ab2680569"
+    },
+    {
+      "path": "a-dark-iphone-note.png",
+      "bytes": 60385,
+      "sha256": "57910250d0d3e047ebf19abe08c61f81cbf0c3fae95b27cd0755c361da4363c8"
+    },
+    {
+      "path": "a-desktop-interaction.mp4",
+      "bytes": 916493,
+      "sha256": "efb786dd935082a4ea86d64823a49b56a6179fc07a50bc6aa122e7fb9d4dbae6"
+    },
+    {
+      "path": "a-desktop-interaction.webm",
+      "bytes": 2642445,
+      "sha256": "37830b82b64d42fc542ce4094628a219b47a7eed73be3af2c42277898f29513e"
+    },
+    {
+      "path": "a-iphone-interaction.mp4",
+      "bytes": 507139,
+      "sha256": "67c7eb9a49b4fb79e95f1f50550fd41f2ea03246b08373ac531b8c0838bc22e0"
+    },
+    {
+      "path": "a-iphone-interaction.webm",
+      "bytes": 1130846,
+      "sha256": "3e244df1be4c36d1ec85c7ec59c21aa9f4406b1f00189f5c452431ff20c8e60e"
+    },
+    {
+      "path": "a-light-desktop-auth.png",
+      "bytes": 398840,
+      "sha256": "3a76867e2a0a8ae14fe73961c840cef4da3ee1f33dd8728c23c951aa630f56fe"
+    },
+    {
+      "path": "a-light-desktop-empty.png",
+      "bytes": 130582,
+      "sha256": "f35d4b72dd649f1b16505781d3c0574ad9f9707e440cfc10234e7ee38936e932"
+    },
+    {
+      "path": "a-light-desktop-home.png",
+      "bytes": 145397,
+      "sha256": "5d1bb7b84b966304c75204cb7e80de4d2071d2c938df8e29ff2800a40cbb884f"
+    },
+    {
+      "path": "a-light-desktop-note.png",
+      "bytes": 149774,
+      "sha256": "b8dbb6ceb1656008d9a5bb76282f22e0158fe9873929652ce75d9ac73db34cb8"
+    },
+    {
+      "path": "a-light-iphone-auth.png",
+      "bytes": 123638,
+      "sha256": "d28e6a96ce59cd176b8cfa5b6d0c83c0c8ef82efa85016dae66048bda610b4d6"
+    },
+    {
+      "path": "a-light-iphone-empty.png",
+      "bytes": 52434,
+      "sha256": "e9f371548b5f7afddb1d8eb0a6163db38eb8a50cfceae834eba4f38fe7d71039"
+    },
+    {
+      "path": "a-light-iphone-home.png",
+      "bytes": 52458,
+      "sha256": "61bc58324ca38fecfb2b28fa30e8caeb24e4de08745d24c6f8caf276cdb401d9"
+    },
+    {
+      "path": "a-light-iphone-note.png",
+      "bytes": 61230,
+      "sha256": "fef6e1ddda1ea31eddfd23d154f64e2d75d9090c8e67b3103522de9f13fcdcb7"
+    },
+    {
+      "path": "b-dark-desktop-auth.png",
+      "bytes": 604937,
+      "sha256": "552c2db4ef64d21380edb16103ca1bd9a2d8224388a8305ad3189a3a61a88020"
+    },
+    {
+      "path": "b-dark-desktop-commands.png",
+      "bytes": 180957,
+      "sha256": "50627145dc784e2efce7ac82d61a9d98024c850acd373ea007f9948bb237f6f5"
+    },
+    {
+      "path": "b-dark-desktop-empty.png",
+      "bytes": 330679,
+      "sha256": "47bdd8bd5503cc523e99599a06ab46d9a7f15d8b97f2ec912dea7e4156b54df1"
+    },
+    {
+      "path": "b-dark-desktop-home.png",
+      "bytes": 431129,
+      "sha256": "2e7ee8ae27b68fa54f4f8b7be1937ab69fbdb904561cf0b9cb853e9fd0c1dcac"
+    },
+    {
+      "path": "b-dark-desktop-note.png",
+      "bytes": 296970,
+      "sha256": "43dcd99f0d646bef601b9c9cbd670d1e43160162063e2c4162a410e268ea7f8e"
+    },
+    {
+      "path": "b-dark-iphone-auth.png",
+      "bytes": 142481,
+      "sha256": "af47c1f8d401825ae4d6579115157d81edf56d0dbe6bd8cb5ab449ed781f3eeb"
+    },
+    {
+      "path": "b-dark-iphone-commands.png",
+      "bytes": 68665,
+      "sha256": "03d63370a56c79da614b001afdd521f284a93e90336aeffd505d3c2f52f8a185"
+    },
+    {
+      "path": "b-dark-iphone-empty.png",
+      "bytes": 118808,
+      "sha256": "2ac2544f174316320c3d50b08462aa8935fe0faef84eceab95fb7e5ee9f07800"
+    },
+    {
+      "path": "b-dark-iphone-home.png",
+      "bytes": 143878,
+      "sha256": "cc82616a286963dc6867673229d9eefdebef3c3f2451bd8f8fbeacf1ac094976"
+    },
+    {
+      "path": "b-dark-iphone-note.png",
+      "bytes": 112796,
+      "sha256": "bcc7b8d24efb1a9868c9456a1acb71a971a521713578a328c48940763203c586"
+    },
+    {
+      "path": "b-desktop-interaction.mp4",
+      "bytes": 1369670,
+      "sha256": "740faad40a2a04d5288e12fd32daf0d627bab897beef652f0570e44cfb14103e"
+    },
+    {
+      "path": "b-desktop-interaction.webm",
+      "bytes": 3338314,
+      "sha256": "9f9e7646be975f5a04c9dfc1bd966b20974036394ecd3c76af0a20b491a9bec4"
+    },
+    {
+      "path": "b-iphone-interaction.mp4",
+      "bytes": 622313,
+      "sha256": "6239a59e7e4044f71b83dcacd1ab14bc16d65270c18a0b6d9ae30421c91c2d97"
+    },
+    {
+      "path": "b-iphone-interaction.webm",
+      "bytes": 1282377,
+      "sha256": "92262c3bc3190c99a5c2e21dc7ca28016ee9647cb76fcda498f21b8e0bb01bab"
+    },
+    {
+      "path": "b-light-desktop-auth.png",
+      "bytes": 606844,
+      "sha256": "9b19a1bfeed1cf842d89aa078462ab8e504d9a33961d90f11b949f42aab68c4d"
+    },
+    {
+      "path": "b-light-desktop-empty.png",
+      "bytes": 333555,
+      "sha256": "f0265fa638bf9058e0cba2802ca42bef38f45ae16d97d20ee5fb77d5ff5ceaec"
+    },
+    {
+      "path": "b-light-desktop-home.png",
+      "bytes": 432715,
+      "sha256": "e005a04ae0241e0c899217602ec356cf86bf2e26db5f3dc20d1b3e99031a7b2b"
+    },
+    {
+      "path": "b-light-desktop-note.png",
+      "bytes": 306023,
+      "sha256": "0b2e897ae2ef48c88e532d228e3e4957490e383e8319ceddf3474b91cc541f86"
+    },
+    {
+      "path": "b-light-iphone-auth.png",
+      "bytes": 142725,
+      "sha256": "4ff2afb49436526f9e8a30ddfc5954e328151d26208457142deabd3f25bb8cf1"
+    },
+    {
+      "path": "b-light-iphone-empty.png",
+      "bytes": 119512,
+      "sha256": "397b55bccb4a0ce46bfd4a32d577533c9ec6d10f7fadb69a3b76fc68ffada1d7"
+    },
+    {
+      "path": "b-light-iphone-home.png",
+      "bytes": 144677,
+      "sha256": "bf6674fed6bf966130efb1b20759789c6630659a77802fd7a6754fc1545caf67"
+    },
+    {
+      "path": "b-light-iphone-note.png",
+      "bytes": 115588,
+      "sha256": "fbb9f53a208ea4471f69769d1bc40730ee1260f63aac9462707b4c3ea1653914"
+    },
+    {
+      "path": "index.html",
+      "bytes": 4343,
+      "sha256": "fbae9a1a1cfd2b0a8bf500c9661b31581ca205c33a8c2dabf5ed84decc31e9ce"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 943,
+      "sha256": "516e6baa899ce2db4bbc87154fe07a966ce56263ba56dfffde3f4658411ab492"
+    }
+  ]
+}

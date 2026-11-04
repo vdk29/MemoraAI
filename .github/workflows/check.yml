@@ -1,0 +1,24 @@
+name: MEMORA checks
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      VITE_SUPABASE_URL: https://ewsqrqzabahjtmorrqhh.supabase.co
+      VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_NWjK2JNcBV3Co5XZOTD_-A_VvSJRYWH
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm test
