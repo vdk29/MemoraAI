@@ -164,7 +164,14 @@ export function Dashboard({ data, own, shared }: any) {
                   p.id === (c.user_a === shared.userId ? c.user_b : c.user_a),
               );
               return (
-                <a className="conversation-preview" href="#chats" key={c.id}>
+                <a
+                  className="conversation-preview"
+                  href={
+                    "#chats/" +
+                    (c.user_a === shared.userId ? c.user_b : c.user_a)
+                  }
+                  key={c.id}
+                >
                   <Avatar profile={profile} />
                   <span>
                     <strong>{profile?.display_name || "Переписка"}</strong>

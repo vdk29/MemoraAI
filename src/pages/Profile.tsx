@@ -1,7 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { db, result } from "../lib/supabase";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { Avatar, Empty } from "../components/ui";
+import {
+  acceptFriend,
+  removeFriend,
+  requestFriend,
+  relationship,
+  type Friendship,
+} from "../lib/social";
 export function Profile({
   profile,
   user,
@@ -13,8 +20,30 @@ export function Profile({
 }: any) {
   const [name, setName] = useState(profile?.display_name || ""),
     [bio, setBio] = useState(profile?.bio || "");
+  const [friend, setFriend] = useState<Friendship | null>(null),
+    [socialBusy, setSocialBusy] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    if (!profile || profile.id === user.id) return;
+    run(async () => {
+      const row = await relationship(user.id, profile.id);
+      if (alive) setFriend(row);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [profile?.id, user.id, friends]);
   if (!profile) return <Empty title="Профиль не найден" />;
   const own = user.id === profile.id;
+  async function socialAction(task: () => Promise<void>) {
+    if (socialBusy) return;
+    setSocialBusy(true);
+    await run(async () => {
+      await task();
+      await refresh();
+    });
+    setSocialBusy(false);
+  }
   return (
     <div className="profile-layout">
       <section className="panel profile-card">
@@ -25,35 +54,71 @@ export function Profile({
           В MEMORA с {new Date(profile.created_at).toLocaleDateString("ru-RU")}
         </small>
         {!own && (
-          <div>
-            <button
-              className="primary"
-              disabled={
-                friends.some((f: any) =>
-                  [f.requester_id, f.recipient_id].includes(profile.id),
-                ) || !profile.discoverable
-              }
-              onClick={() =>
-                run(async () => {
-                  await result(
-                    db.from("friendships").insert({
-                      requester_id: user.id,
-                      recipient_id: profile.id,
-                    }),
-                  );
-                  await refresh();
-                })
-              }
-            >
-              {friends.some((f: any) =>
-                [f.requester_id, f.recipient_id].includes(profile.id),
-              )
-                ? "Вы друзья или заявка отправлена"
-                : "Добавить в друзья"}
-            </button>
-            <a className="button" href="#chats">
-              Открыть переписки
-            </a>
+          <div className="profile-social-actions">
+            {friend?.status === "accepted" ? (
+              <a className="button primary" href={"#chats/" + profile.id}>
+                Написать сообщение
+              </a>
+            ) : friend && friend.recipient_id === user.id ? (
+              <>
+                <button
+                  className="primary"
+                  disabled={socialBusy}
+                  onClick={() =>
+                    void socialAction(async () => {
+                      setFriend(await acceptFriend(friend!.id));
+                    })
+                  }
+                >
+                  Принять заявку
+                </button>
+                <button
+                  disabled={socialBusy}
+                  onClick={() =>
+                    void socialAction(async () => {
+                      await removeFriend(friend!.id);
+                      setFriend(null);
+                    })
+                  }
+                >
+                  Отклонить
+                </button>
+              </>
+            ) : friend ? (
+              <button
+                disabled={socialBusy}
+                onClick={() =>
+                  void socialAction(async () => {
+                    await removeFriend(friend!.id);
+                    setFriend(null);
+                  })
+                }
+              >
+                Отменить заявку
+              </button>
+            ) : (
+              <button
+                className="primary"
+                disabled={socialBusy || !profile.discoverable}
+                onClick={() =>
+                  void socialAction(async () => {
+                    setFriend(await requestFriend(user.id, profile.id));
+                  })
+                }
+              >
+                {socialBusy ? "Отправка…" : "Добавить в друзья"}
+              </button>
+            )}
+            {friend?.status === "pending" && (
+              <small>
+                {friend.recipient_id === user.id
+                  ? "Входящая заявка в друзья"
+                  : "Заявка отправлена. Ждём ответа."}
+              </small>
+            )}
+            {!friend && !profile.discoverable && (
+              <small>Пользователь ограничил новые заявки.</small>
+            )}
           </div>
         )}
       </section>

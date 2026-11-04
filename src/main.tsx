@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useState, useRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+  useRef,
+  lazy,
+  Suspense,
+} from "react";
 import { createRoot } from "react-dom/client";
 import type { User } from "@supabase/supabase-js";
 import {
@@ -26,7 +33,9 @@ import { Dashboard } from "./pages/Dashboard";
 import { Auth } from "./pages/Auth";
 import { Notes } from "./pages/Notes";
 import { Events } from "./pages/Events";
-import { Social } from "./pages/Social";
+const Social = lazy(() =>
+  import("./pages/Social").then((module) => ({ default: module.Social })),
+);
 import { Profile } from "./pages/Profile";
 import { Avatar, Empty } from "./components/ui";
 import { ThemeProvider } from "./lib/theme";
@@ -36,6 +45,7 @@ import { CommandPalette } from "./components/CommandPalette";
 import { NoteEditor } from "./components/NoteEditor";
 import "./style.css";
 import "./trace.css";
+import "./depth.css";
 const nav = [
   ["home", "Главная", House],
   ["notes", "Заметки", FileText],
@@ -137,6 +147,12 @@ function App() {
     if (!user) return;
     setLoading(true);
     run(refresh).finally(() => setLoading(false));
+    let connected = false;
+    let refreshTimer: number | undefined;
+    const scheduleRefresh = () => {
+      window.clearTimeout(refreshTimer);
+      refreshTimer = window.setTimeout(() => void run(refresh), 180);
+    };
     const channel = db
       .channel("user:" + user.id)
       .on(
@@ -147,20 +163,34 @@ function App() {
           table: "notifications",
           filter: `user_id=eq.${user.id}`,
         },
-        () => run(refresh),
+        scheduleRefresh,
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "friendships" },
-        () => run(refresh),
+        scheduleRefresh,
       )
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages" },
-        () => run(refresh),
+        scheduleRefresh,
       )
-      .subscribe();
+      .subscribe((status) => {
+        connected = status === "SUBSCRIBED";
+        if (connected) scheduleRefresh();
+      });
+    const onVisible = () => {
+      if (document.visibilityState === "visible") scheduleRefresh();
+    };
+    const fallback = window.setInterval(() => {
+      if (!connected && document.visibilityState === "visible")
+        scheduleRefresh();
+    }, 30000);
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
+      window.clearTimeout(refreshTimer);
+      window.clearInterval(fallback);
+      document.removeEventListener("visibilitychange", onVisible);
       void db.removeChannel(channel);
     };
   }, [user?.id, refresh]);
@@ -375,7 +405,7 @@ function App() {
                     ["notes", "favorites"].includes(route)) ||
                     (table === "notes" && route === "notes" && !search) ||
                     (["friendships", "conversations"].includes(table) &&
-                      route === "chats") ||
+                      route.startsWith("chats")) ||
                     (table === "notifications" && route === "notifications")),
               )
               .map(([table]) => (
@@ -399,8 +429,20 @@ function App() {
                 <section className="calendar-page">
                   <Events {...shared} calendar />
                 </section>
-              ) : route === "chats" ? (
-                <Social {...shared} />
+              ) : route.startsWith("chats") ? (
+                <Suspense fallback={<p role="status">Загружаем общение…</p>}>
+                  <Social
+                    {...shared}
+                    initialPeer={
+                      route.split("/")[1] === "people"
+                        ? ""
+                        : route.split("/")[1] || ""
+                    }
+                    initialTab={
+                      route === "chats/people" ? "people" : "messages"
+                    }
+                  />
+                </Suspense>
               ) : route.startsWith("profile") || route === "settings" ? (
                 <Profile
                   key={route + own?.avatar_path}
@@ -452,7 +494,9 @@ function App() {
                           );
                           await refresh();
                           location.hash =
-                            n.kind === "message" ? "chats" : "chats";
+                            n.kind === "message"
+                              ? "chats/" + n.actor_id
+                              : "chats/people";
                         })
                       }
                     >

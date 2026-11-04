@@ -105,7 +105,7 @@ for (const width of [1440, 390])
     await expect(page.locator("nav>a")).toHaveCount(4);
     await expect(page.locator("nav")).not.toContainText("События");
     await page.screenshot({
-      path: `video-assets/after/trace-regression-dashboard-${width}-fixture.png`,
+      path: `video-assets/after/trace-depth-regression-dashboard-${width}-fixture.png`,
       fullPage: true,
       animations: "disabled",
     });
@@ -157,7 +157,7 @@ for (const width of [1440, 390])
       "Оставить время для себя",
     );
     await page.screenshot({
-      path: `video-assets/after/trace-regression-note-expanded-${width}-fixture.png`,
+      path: `video-assets/after/trace-depth-regression-note-expanded-${width}-fixture.png`,
       fullPage: true,
       animations: "disabled",
     });
@@ -189,7 +189,7 @@ for (const width of [1440, 390])
         .filter({ hasText: "Новое событие в календаре" }),
     ).toBeVisible();
     await page.screenshot({
-      path: `video-assets/after/trace-regression-calendar-${width}-fixture.png`,
+      path: `video-assets/after/trace-depth-regression-calendar-${width}-fixture.png`,
       fullPage: true,
       animations: "disabled",
     });

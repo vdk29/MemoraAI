@@ -34,7 +34,7 @@ for (const width of [1440, 390])
       await page.goto("/");
       await page.getByRole("heading", { name: "С возвращением" }).waitFor();
       await page.screenshot({
-        path: `video-assets/after/trace-${theme}-auth-${width}.png`,
+        path: `video-assets/after/trace-depth-${theme}-auth-${width}.png`,
         fullPage: true,
       });
       await page.evaluate(
@@ -239,7 +239,7 @@ for (const width of [1440, 390])
         });
         expect(contrast).toBeGreaterThan(7);
         await page.screenshot({
-          path: `video-assets/after/trace-${theme}-${route}-${width}-fixture.png`,
+          path: `video-assets/after/trace-depth-${theme}-${route}-${width}-fixture.png`,
           fullPage: true,
         });
       }
@@ -253,7 +253,7 @@ for (const width of [1440, 390])
         "none",
       );
       await page.screenshot({
-        path: `video-assets/after/trace-${theme}-editor-${width}-fixture.png`,
+        path: `video-assets/after/trace-depth-${theme}-editor-${width}-fixture.png`,
         fullPage: true,
       });
       await page.keyboard.press("Escape");

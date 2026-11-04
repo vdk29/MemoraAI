@@ -1,371 +1,745 @@
 import { useEffect, useRef, useState } from "react";
-import { db, result, date } from "../lib/supabase";
 import {
-  mergeMessages,
-  messagePage,
-  sendMessage,
-  type Message,
-} from "../lib/messages";
-import { Avatar, Empty } from "../components/ui";
+  ArrowLeft,
+  ArrowUpRight,
+  Check,
+  ChevronRight,
+  Copy,
+  LoaderCircle,
+  MessageCircle,
+  Plus,
+  Search,
+  Send,
+  ShieldCheck,
+  UserPlus,
+  Users,
+  X,
+} from "lucide-react";
+import { db, result } from "../lib/supabase";
+import { sendMessage } from "../lib/messages";
+import {
+  acceptFriend,
+  openConversation,
+  peerId,
+  removeFriend,
+  requestFriend,
+  searchPeople,
+  socialError,
+  type Friendship,
+} from "../lib/social";
+import { useConversation } from "../lib/useConversation";
+import { Avatar } from "../components/ui";
+
 export function Social({
   userId,
-  run,
   profiles,
   friends,
   conversations,
   refresh,
-  notifications = [],
+  initialPeer = "",
+  initialTab = "messages",
 }: any) {
+  const [tab, setTab] = useState<"messages" | "people">("messages");
+  useEffect(() => {
+    setTab(initialTab);
+  }, [initialTab]);
   const [query, setQuery] = useState(""),
     [found, setFound] = useState<any[]>([]),
-    [active, setActive] = useState<any>(null),
-    [messages, setMessages] = useState<Message[]>([]),
-    [text, setText] = useState(""),
+    [searching, setSearching] = useState(false);
+  const [links, setLinks] = useState<Record<string, Friendship | null>>({});
+  const [active, setActive] = useState<any>(null),
+    [extraProfiles, setExtraProfiles] = useState<any[]>([]);
+  const [opening, setOpening] = useState(false),
+    [actionBusy, setActionBusy] = useState(""),
+    [error, setError] = useState(""),
+    [notice, setNotice] = useState("");
+  const [text, setText] = useState(""),
     [busy, setBusy] = useState(false),
-    [status, setStatus] = useState(""),
-    [hasOlder, setHasOlder] = useState(false),
-    [historyBusy, setHistoryBusy] = useState(false);
-  const end = useRef<HTMLDivElement>(null),
-    near = useRef(true),
-    draft = useRef<{
-      id: string;
-      body: string;
-      conversation_id: string;
-    } | null>(null),
-    list = useRef<HTMLDivElement>(null),
-    currentConversation = useRef<string | undefined>(undefined);
-  currentConversation.current = active?.id;
-  const person = (id: string) => profiles.find((p: any) => p.id === id);
+    [sendError, setSendError] = useState("");
+  const searchInput = useRef<HTMLInputElement>(null),
+    composer = useRef<HTMLFormElement>(null);
+  const list = useRef<HTMLDivElement>(null),
+    actionLock = useRef(false),
+    openVersion = useRef(0),
+    current = useRef<string | undefined>(undefined);
+  const draft = useRef<{
+    id: string;
+    body: string;
+    conversation_id: string;
+  } | null>(null);
+  current.current = active?.id;
+  const chat = useConversation(active?.id, userId, refresh, list);
+  const person = (id: string) =>
+    profiles.find((p: any) => p.id === id) ||
+    extraProfiles.find((p) => p.id === id);
+  const other = active
+    ? active.user_a === userId
+      ? active.user_b
+      : active.user_a
+    : "";
+  const link = (id: string): Friendship | null =>
+    Object.hasOwn(links, id)
+      ? links[id]
+      : friends.find((f: Friendship) => peerId(f, userId) === id) || null;
+  const accepted = friends.filter((f: Friendship) => f.status === "accepted");
+  const requests = friends.filter((f: Friendship) => f.status === "pending");
+  const incoming = requests.filter(
+    (f: Friendship) => f.recipient_id === userId,
+  );
+  const canSend = link(other)?.status === "accepted";
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (query.trim().length < 2) {
-        setFound([]);
-        return;
-      }
-      run(async () =>
-        setFound(
-          (await result(
-            db
-              .from("profiles")
-              .select("*")
-              .eq("discoverable", true)
-              .neq("id", userId)
-              .ilike("display_name", `%${query.trim().replace(/[%_]/g, "")}%`)
-              .limit(20),
-          )) || [],
-        ),
-      );
-    }, 350);
-    return () => clearTimeout(timer);
-  }, [query]);
-  useEffect(() => {
-    if (!active) return;
-    let alive = true;
-    setMessages([]);
-    setHasOlder(false);
     setText("");
+    setSendError("");
     draft.current = null;
-    near.current = true;
-    const markRead = async () => {
-      const readAt = new Date().toISOString();
-      await result(
-        db.from("read_receipts").upsert({
-          conversation_id: active.id,
-          user_id: userId,
-          read_at: readAt,
-        }),
-      );
-      await result(
-        db
-          .from("notifications")
-          .update({ read: true })
-          .eq("reference_id", active.id)
-          .eq("kind", "message")
-          .eq("read", false)
-          .lte("created_at", readAt),
-      );
-      await refresh();
-    };
-    const load = async () => {
-      const rows = await messagePage(active.id);
-      if (!alive) return;
-      setMessages((current) => mergeMessages(current, rows));
-      setHasOlder(rows.length === 50);
-      await markRead();
-    };
-    run(load);
-    const channel = db
-      .channel("chat:" + active.id)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-          filter: `conversation_id=eq.${active.id}`,
-        },
-        (payload) => {
-          if (!alive) return;
-          setMessages((current) =>
-            mergeMessages(current, [payload.new as Message]),
-          );
-          if (document.visibilityState === "visible") run(markRead);
-        },
-      )
-      .subscribe((status) => {
-        if (!alive) return;
-        setStatus(
-          status === "SUBSCRIBED"
-            ? "В реальном времени"
-            : status === "CHANNEL_ERROR" || status === "TIMED_OUT"
-              ? "Связь потеряна. Переподключаемся…"
-              : "Подключение…",
-        );
-        if (status === "SUBSCRIBED") run(load);
-      });
-    const onVisible = () => {
-      if (document.visibilityState === "visible") run(load);
-    };
-    document.addEventListener("visibilitychange", onVisible);
+  }, [active?.id]);
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(""), 3500);
+    return () => clearTimeout(timer);
+  }, [notice]);
+  useEffect(() => {
+    let alive = true;
+    setError("");
+    setFound([]);
+    if (query.trim().length < 2) {
+      setSearching(false);
+      return;
+    }
+    setSearching(true);
+    const timer = setTimeout(async () => {
+      try {
+        const rows = await searchPeople(query, userId);
+        if (alive) setFound(rows);
+      } catch (e) {
+        if (alive) setError(socialError(e));
+      } finally {
+        if (alive) setSearching(false);
+      }
+    }, 300);
     return () => {
       alive = false;
-      document.removeEventListener("visibilitychange", onVisible);
-      void db.removeChannel(channel);
+      clearTimeout(timer);
     };
-  }, [active?.id, userId]);
+  }, [query, userId]);
+  // Search/selected peers may be outside the first page of friendships.
   useEffect(() => {
-    if (near.current) end.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-  async function open(other: string) {
-    let c = conversations.find((c: any) =>
-      [c.user_a, c.user_b].includes(other),
-    );
-    if (!c) {
-      const response = await db
-        .from("conversations")
-        .insert({ user_a: userId, user_b: other })
-        .select()
-        .single();
-      if (response.error?.code === "23505")
-        c = await result(
-          db
-            .from("conversations")
-            .select("*")
-            .or(`user_a.eq.${userId},user_b.eq.${userId}`)
-            .or(`user_a.eq.${other},user_b.eq.${other}`)
-            .single(),
-        );
-      else if (response.error) throw response.error;
-      else c = response.data;
+    let alive = true;
+    const ids = [
+      ...new Set([...found.map((p) => p.id), ...(other ? [other] : [])]),
+    ];
+    if (!ids.length) return;
+    void (async () => {
+      try {
+        const rows =
+          (await result(
+            db
+              .from("friendships")
+              .select("*")
+              .or(
+                `requester_id.in.(${ids.join(",")}),recipient_id.in.(${ids.join(",")})`,
+              ),
+          )) || [];
+        if (alive)
+          setLinks((current) => {
+            const next = { ...current };
+            for (const id of ids)
+              next[id] =
+                rows.find((f: Friendship) => peerId(f, userId) === id) || null;
+            return next;
+          });
+      } catch (e) {
+        if (alive) setError(socialError(e));
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [found, other, friends, userId]);
+  async function mutate(
+    id: string,
+    task: () => Promise<unknown>,
+    message: string,
+  ) {
+    if (actionLock.current) return;
+    actionLock.current = true;
+    setActionBusy(id);
+    setError("");
+    try {
+      await task();
+      setNotice(message);
       await refresh();
+    } catch (e) {
+      setError(socialError(e));
+    } finally {
+      actionLock.current = false;
+      setActionBusy("");
     }
-    setActive(c);
   }
+  async function add(id: string) {
+    await mutate(
+      id,
+      async () => {
+        const row = await requestFriend(userId, id);
+        setLinks((v) => ({ ...v, [id]: row }));
+      },
+      "Заявка отправлена",
+    );
+  }
+  async function accept(f: Friendship) {
+    await mutate(
+      peerId(f, userId),
+      async () => {
+        const row = await acceptFriend(f.id);
+        setLinks((v) => ({ ...v, [peerId(f, userId)]: row }));
+      },
+      "Теперь вы друзья. Можно начать разговор.",
+    );
+  }
+  async function remove(f: Friendship) {
+    await mutate(
+      peerId(f, userId),
+      async () => {
+        await removeFriend(f.id);
+        setLinks((v) => ({ ...v, [peerId(f, userId)]: null }));
+      },
+      f.status === "accepted"
+        ? "Пользователь удалён из друзей"
+        : "Заявка закрыта",
+    );
+  }
+  async function open(id: string) {
+    const version = ++openVersion.current;
+    setOpening(true);
+    setError("");
+    try {
+      let c = conversations.find((c: any) => [c.user_a, c.user_b].includes(id));
+      if (!c) c = await openConversation(userId, id);
+      if (version !== openVersion.current) return;
+      if (!person(id)) {
+        const profile = await result(
+          db.from("profiles").select("*").eq("id", id).maybeSingle(),
+        );
+        if (version !== openVersion.current) return;
+        if (profile)
+          setExtraProfiles((rows) => [
+            ...rows.filter((p) => p.id !== id),
+            profile,
+          ]);
+      }
+      setActive(c);
+      setTab("messages");
+      if (!conversations.some((row: any) => row.id === c.id))
+        void refresh().catch(() => {});
+    } catch (e) {
+      if (version === openVersion.current) setError(socialError(e));
+    } finally {
+      if (version === openVersion.current) setOpening(false);
+    }
+  }
+  useEffect(() => {
+    if (initialPeer) void open(initialPeer);
+  }, [initialPeer]);
+  useEffect(
+    () => () => {
+      openVersion.current++;
+    },
+    [],
+  );
+  function showPeople() {
+    setTab("people");
+    if (matchMedia("(max-width:760px)").matches && active) {
+      setActive(null);
+      if (initialPeer) location.hash = "chats";
+    }
+    requestAnimationFrame(() => searchInput.current?.focus());
+  }
+  async function submit() {
+    if (busy || !text.trim() || !active || !canSend) return;
+    const conversationId = active.id;
+    setBusy(true);
+    setSendError("");
+    try {
+      if (
+        !draft.current ||
+        draft.current.body !== text.trim() ||
+        draft.current.conversation_id !== conversationId
+      )
+        draft.current = {
+          id: crypto.randomUUID(),
+          body: text.trim(),
+          conversation_id: conversationId,
+        };
+      const message = await sendMessage({
+        ...draft.current,
+        sender_id: userId,
+      });
+      if (current.current !== conversationId) return;
+      chat.near.current = true;
+      chat.append(message);
+      draft.current = null;
+      setText("");
+      void refresh().catch(() => {});
+    } catch (e) {
+      if (current.current === conversationId) setSendError(socialError(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+  function relationshipAction(p: any) {
+    const f = link(p.id),
+      disabled = !!actionBusy;
+    if (f?.status === "accepted")
+      return (
+        <button
+          className="social-write"
+          disabled={opening}
+          onClick={() => void open(p.id)}
+        >
+          <MessageCircle size={14} />
+          Написать
+        </button>
+      );
+    if (f && f.recipient_id === userId)
+      return (
+        <button
+          className="social-write"
+          disabled={disabled}
+          onClick={() => void accept(f)}
+        >
+          <Check size={14} />
+          Принять
+        </button>
+      );
+    if (f)
+      return (
+        <button
+          className="request-pending"
+          disabled={disabled}
+          onClick={() => void remove(f)}
+        >
+          Отменить заявку
+        </button>
+      );
+    return (
+      <button
+        className="social-write"
+        disabled={disabled}
+        onClick={() => void add(p.id)}
+      >
+        {actionBusy === p.id ? (
+          <LoaderCircle size={14} className="is-spinning" />
+        ) : (
+          <UserPlus size={14} />
+        )}
+        Добавить в друзья
+      </button>
+    );
+  }
+  const me = person(userId);
   return (
-    <div className="social">
-      <section className="panel">
-        <h2>Люди и переписки</h2>
-        <input
-          aria-label="Поиск пользователей"
-          placeholder="Найти по имени…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-        {found.map((p) => (
-          <div className="person" key={p.id}>
-            <a href={"#profile/" + p.id}>
-              <Avatar profile={p} />
-              {p.display_name}
-            </a>
-            {friends.some((f: any) =>
-              [f.requester_id, f.recipient_id].includes(p.id),
-            ) ? (
-              <small>Заявка уже есть</small>
-            ) : (
-              <button
-                onClick={() =>
-                  run(async () => {
-                    await result(
-                      db
-                        .from("friendships")
-                        .insert({ requester_id: userId, recipient_id: p.id }),
-                    );
-                    await refresh();
-                  })
-                }
-              >
-                Добавить
-              </button>
-            )}
+    <div className={"social social-v3" + (active ? " has-active" : "")}>
+      <section className="panel social-directory">
+        <header className="social-heading">
+          <span className="eyebrow">MEMORA / ОБЩЕНИЕ</span>
+          <div>
+            <h2>Люди и переписки</h2>
+            <button
+              className="social-add"
+              aria-label="Добавить друга"
+              onClick={showPeople}
+            >
+              <Plus size={18} />
+            </button>
           </div>
-        ))}
-        <h3>Заявки</h3>
-        {friends
-          .filter((f: any) => f.status === "pending")
-          .map((f: any) => {
-            const incoming = f.recipient_id === userId;
-            return (
-              <div className="person" key={f.id}>
-                <span>
-                  {person(incoming ? f.requester_id : f.recipient_id)
-                    ?.display_name || "Участник"}
-                  <small>
-                    {incoming ? "Входящая заявка" : "Ожидает ответа"}
-                  </small>
-                </span>
-                {incoming && (
-                  <button
-                    onClick={() =>
-                      run(async () => {
-                        await result(
-                          db
-                            .from("friendships")
-                            .update({ status: "accepted" })
-                            .eq("id", f.id),
-                        );
-                        await refresh();
-                      })
-                    }
-                  >
-                    Принять
-                  </button>
-                )}
-                <button
-                  onClick={() =>
-                    run(async () => {
-                      await result(
-                        db.from("friendships").delete().eq("id", f.id),
-                      );
-                      await refresh();
-                    })
-                  }
-                >
-                  {incoming ? "Отклонить" : "Отменить"}
-                </button>
-              </div>
-            );
-          })}
-        <h3>Друзья</h3>
-        {friends
-          .filter((f: any) => f.status === "accepted")
-          .map((f: any) => {
-            const id =
-              f.requester_id === userId ? f.recipient_id : f.requester_id;
-            return (
-              <div className="person" key={id}>
-                <a href={"#profile/" + id}>
-                  <Avatar profile={person(id)} />
-                  {person(id)?.display_name || "Участник"}
-                </a>
-                <button onClick={() => run(() => open(id))}>Написать</button>
-                <button
-                  aria-label="Удалить друга"
-                  onClick={() => {
-                    if (confirm("Удалить из друзей?"))
-                      run(async () => {
-                        await result(
-                          db.from("friendships").delete().eq("id", f.id),
-                        );
-                        await refresh();
-                      });
-                  }}
-                >
-                  ×
-                </button>
-              </div>
-            );
-          })}
-        <h3>История переписок</h3>
-        {conversations.map((c: any) => (
+          <p>Хорошие идеи становятся лучше вместе.</p>
+        </header>
+        <div className="social-tabs" role="tablist" aria-label="Общение">
           <button
-            className={
-              "event-row trace-conversation" +
-              (active?.id === c.id ? " selected" : "")
-            }
-            key={c.id}
-            aria-label={
-              "Переписка: " +
-              (person(c.user_a === userId ? c.user_b : c.user_a)
-                ?.display_name || "пользователем")
-            }
-            onClick={() => {
-              setActive(c);
-            }}
+            role="tab"
+            aria-selected={tab === "messages"}
+            onClick={() => setTab("messages")}
           >
-            <Avatar
-              profile={person(c.user_a === userId ? c.user_b : c.user_a)}
-            />
-            <span>
-              <strong>
-                {person(c.user_a === userId ? c.user_b : c.user_a)
-                  ?.display_name || "Переписка"}
-              </strong>
-              {c.last_body && <small>{c.last_body.slice(0, 80)}</small>}
-            </span>
-            {Number(c.unread) > 0 && (
-              <b aria-label="Непрочитанные">{c.unread}</b>
-            )}
+            <MessageCircle size={15} />
+            Переписки
           </button>
-        ))}
+          <button
+            role="tab"
+            aria-selected={tab === "people"}
+            onClick={showPeople}
+          >
+            <Users size={15} />
+            Люди{incoming.length > 0 && <b>{incoming.length}</b>}
+          </button>
+        </div>
+        {notice && (
+          <p className="social-notice" role="status">
+            <Check size={14} />
+            {notice}
+          </p>
+        )}
+        {error && (
+          <p className="social-error" role="alert">
+            {error}
+            <button
+              aria-label="Закрыть ошибку общения"
+              onClick={() => setError("")}
+            >
+              <X size={14} />
+            </button>
+          </p>
+        )}
+        {opening && (
+          <p className="social-loading" role="status">
+            <LoaderCircle size={15} className="is-spinning" />
+            Открываем переписку…
+          </p>
+        )}
+        <div className="social-directory-scroll">
+          {tab === "people" ? (
+            <>
+              <label className="people-search">
+                <Search size={16} />
+                <input
+                  ref={searchInput}
+                  aria-label="Поиск пользователей"
+                  placeholder="Имя или ID пользователя"
+                  maxLength={100}
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+              </label>
+              <p className="social-hint">
+                Найдите человека по имени или попросите его ID.
+              </p>
+              {searching && (
+                <p className="social-loading" role="status">
+                  Ищем пользователей…
+                </p>
+              )}
+              {!!query.trim() && query.trim().length < 2 && (
+                <p className="social-hint">Введите хотя бы два символа.</p>
+              )}
+              {query.trim().length >= 2 &&
+                !searching &&
+                !found.length &&
+                !error && (
+                  <div className="social-inline-empty">
+                    <Search size={21} />
+                    <strong>Пока никого не нашли</strong>
+                    <p>
+                      Проверьте имя или вставьте полный ID. Пользователь должен
+                      разрешить поиск в настройках.
+                    </p>
+                  </div>
+                )}
+              {found.map((p) => (
+                <div className="social-person search-result" key={p.id}>
+                  <a href={"#profile/" + p.id}>
+                    <Avatar profile={p} />
+                    <span>
+                      <strong>{p.display_name}</strong>
+                      <small>
+                        {link(p.id)?.status === "accepted"
+                          ? "У вас в друзьях"
+                          : link(p.id)?.recipient_id === userId
+                            ? "Хочет добавить вас в друзья"
+                            : link(p.id)
+                              ? "Заявка ожидает ответа"
+                              : p.bio || "Пользователь MEMORA"}
+                      </small>
+                    </span>
+                  </a>
+                  {relationshipAction(p)}
+                </div>
+              ))}
+              <div className="social-group-label">
+                <h3>Заявки</h3>
+                <span>{requests.length}</span>
+              </div>
+              {!requests.length && (
+                <p className="social-quiet">Новых заявок пока нет.</p>
+              )}
+              {requests.map((f: Friendship) => {
+                const id = peerId(f, userId),
+                  p = person(id),
+                  isIncoming = f.recipient_id === userId;
+                return (
+                  <div className="social-person request-card" key={f.id}>
+                    <a href={"#profile/" + id}>
+                      <Avatar profile={p} />
+                      <span>
+                        <strong>{p?.display_name || "Пользователь"}</strong>
+                        <small>
+                          {isIncoming
+                            ? "Хочет стать вашим другом"
+                            : "Заявка отправлена"}
+                        </small>
+                      </span>
+                    </a>
+                    <div className="request-actions">
+                      {isIncoming && (
+                        <button
+                          disabled={!!actionBusy}
+                          className="social-write"
+                          onClick={() => void accept(f)}
+                        >
+                          <Check size={14} />
+                          Принять
+                        </button>
+                      )}
+                      <button
+                        disabled={!!actionBusy}
+                        onClick={() => void remove(f)}
+                      >
+                        {isIncoming ? "Отклонить" : "Отменить"}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="social-group-label">
+                <h3>Друзья</h3>
+                <span>{accepted.length}</span>
+              </div>
+              {!accepted.length && (
+                <div className="social-inline-empty">
+                  <UserPlus size={24} />
+                  <strong>Всё начинается со знакомства</strong>
+                  <p>
+                    Найдите друга выше и отправьте заявку. После принятия вы
+                    сможете переписываться.
+                  </p>
+                </div>
+              )}
+              {accepted.map((f: Friendship) => {
+                const id = peerId(f, userId),
+                  p = person(id);
+                return (
+                  <div className="social-person" key={f.id}>
+                    <a href={"#profile/" + id}>
+                      <Avatar profile={p} />
+                      <span>
+                        <strong>{p?.display_name || "Пользователь"}</strong>
+                        <small>В друзьях</small>
+                      </span>
+                    </a>
+                    <div className="request-actions">
+                      <button
+                        className="social-write"
+                        disabled={opening}
+                        onClick={() => void open(id)}
+                      >
+                        Написать
+                        <ArrowUpRight size={13} />
+                      </button>
+                      <button
+                        aria-label={"Удалить друга " + (p?.display_name || "")}
+                        className="icon-only"
+                        onClick={() => {
+                          if (
+                            confirm(
+                              "Удалить из друзей? История переписки сохранится.",
+                            )
+                          )
+                            void remove(f);
+                        }}
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </>
+          ) : (
+            <>
+              <div className="social-group-label">
+                <h3>Все переписки</h3>
+                <span>{conversations.length}</span>
+              </div>
+              {!conversations.length && (
+                <div className="social-inline-empty">
+                  <MessageCircle size={27} />
+                  <strong>Ваши разговоры — здесь</strong>
+                  <p>Добавьте друга, чтобы обмениваться мыслями и планами.</p>
+                  <button onClick={showPeople}>
+                    <UserPlus size={15} />
+                    Найти человека
+                  </button>
+                </div>
+              )}
+              {conversations.map((c: any) => {
+                const id = c.user_a === userId ? c.user_b : c.user_a,
+                  p = person(id);
+                return (
+                  <button
+                    className={
+                      "event-row trace-conversation" +
+                      (active?.id === c.id ? " selected" : "")
+                    }
+                    key={c.id}
+                    aria-label={
+                      "Переписка: " + (p?.display_name || "Пользователь")
+                    }
+                    onClick={() => void open(id)}
+                  >
+                    <Avatar profile={p} />
+                    <span>
+                      <strong>{p?.display_name || "Переписка"}</strong>
+                      <small>{c.last_body || "Начните разговор"}</small>
+                    </span>
+                    <span className="conversation-meta">
+                      {c.last_at && (
+                        <time>
+                          {new Date(c.last_at).toLocaleDateString() ===
+                          new Date().toLocaleDateString()
+                            ? new Date(c.last_at).toLocaleTimeString("ru-RU", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+                            : new Date(c.last_at).toLocaleDateString("ru-RU", {
+                                day: "numeric",
+                                month: "short",
+                              })}
+                        </time>
+                      )}
+                      {Number(c.unread) > 0 && (
+                        <b aria-label="Непрочитанные">{c.unread}</b>
+                      )}
+                    </span>
+                  </button>
+                );
+              })}
+              {accepted.length > 0 && (
+                <>
+                  <div className="social-group-label">
+                    <h3>Начать разговор</h3>
+                    <Users size={14} />
+                  </div>
+                  {accepted.slice(0, 8).map((f: Friendship) => {
+                    const id = peerId(f, userId),
+                      p = person(id);
+                    return (
+                      <button
+                        className="social-quick-friend"
+                        key={id}
+                        disabled={opening}
+                        onClick={() => void open(id)}
+                      >
+                        <Avatar profile={p} />
+                        <span>{p?.display_name || "Пользователь"}</span>
+                        <ChevronRight size={15} />
+                      </button>
+                    );
+                  })}
+                </>
+              )}
+            </>
+          )}
+        </div>
+        <footer className="social-self">
+          <Avatar profile={me} />
+          <span>
+            <strong>{me?.display_name || "Мой аккаунт"}</strong>
+            <small>Пригласите друга по ID</small>
+          </span>
+          <button
+            aria-label="Скопировать мой ID"
+            title="Скопировать мой ID"
+            onClick={() =>
+              void navigator.clipboard.writeText(userId).then(
+                () => setNotice("ID скопирован — отправьте его другу"),
+                () => setError("Не удалось скопировать ID: " + userId),
+              )
+            }
+          >
+            <Copy size={15} />
+          </button>
+        </footer>
       </section>
       <section className="panel chat">
         {active ? (
           <>
-            <header>
-              <Avatar
-                profile={person(
-                  active.user_a === userId ? active.user_b : active.user_a,
-                )}
-              />
-              <h2>
-                {person(
-                  active.user_a === userId ? active.user_b : active.user_a,
-                )?.display_name || "Переписка"}
-              </h2>
-              <small>{status}</small>
+            <header className="chat-header">
+              <button
+                className="chat-back icon-only"
+                aria-label="Назад к перепискам"
+                onClick={() => {
+                  setActive(null);
+                  if (initialPeer) location.hash = "chats";
+                }}
+              >
+                <ArrowLeft size={19} />
+              </button>
+              <a className="chat-peer" href={"#profile/" + other}>
+                <Avatar profile={person(other)} />
+                <span>
+                  <h2>{person(other)?.display_name || "Переписка"}</h2>
+                  <small>
+                    <span
+                      className={
+                        "connection-dot" +
+                        (chat.status.startsWith("Сообщения")
+                          ? " connected"
+                          : "")
+                      }
+                    />
+                    {chat.status}
+                  </small>
+                </span>
+              </a>
+              <a
+                className="chat-profile-link"
+                href={"#profile/" + other}
+                aria-label="Открыть профиль собеседника"
+              >
+                <ArrowUpRight size={18} />
+              </a>
             </header>
+            {chat.error && (
+              <div className="social-error" role="alert">
+                {chat.error}
+                <button onClick={chat.retry}>Повторить</button>
+              </div>
+            )}
             <div
               className="messages"
               ref={list}
+              role="log"
+              aria-label="История сообщений"
+              aria-live="polite"
               onScroll={(e) => {
                 const t = e.currentTarget;
-                near.current =
+                chat.near.current =
                   t.scrollHeight - t.scrollTop - t.clientHeight < 100;
               }}
             >
-              {hasOlder && (
+              {chat.loading && (
+                <p className="social-loading" role="status">
+                  Загружаем историю…
+                </p>
+              )}
+              {chat.hasOlder && (
                 <button
-                  disabled={historyBusy}
-                  onClick={() => {
-                    const conversationId = active.id;
-                    near.current = false;
-                    setHistoryBusy(true);
-                    const height = list.current?.scrollHeight || 0;
-                    run(async () => {
-                      const rows = await messagePage(
-                        conversationId,
-                        messages[0],
-                      );
-                      if (currentConversation.current !== conversationId)
-                        return;
-                      setMessages((current) => mergeMessages(current, rows));
-                      setHasOlder(rows.length === 50);
-                      requestAnimationFrame(() => {
-                        if (list.current)
-                          list.current.scrollTop +=
-                            list.current.scrollHeight - height;
-                      });
-                    }).finally(() => setHistoryBusy(false));
-                  }}
+                  className="chat-load-older"
+                  disabled={chat.historyBusy}
+                  onClick={() => void chat.older()}
                 >
-                  {historyBusy ? "Загрузка…" : "Загрузить предыдущие"}
+                  {chat.historyBusy ? "Загрузка…" : "Загрузить предыдущие"}
                 </button>
               )}
-              {messages.map((m, index) => (
+              {!chat.loading && !chat.messages.length && !chat.error && (
+                <div className="chat-start">
+                  <Avatar profile={person(other)} />
+                  <strong>Начало вашей переписки</strong>
+                  <p>Первое сообщение — начало новой связи.</p>
+                </div>
+              )}
+              {chat.messages.map((m, index) => (
                 <div className="trace-message-group" key={m.id}>
                   {(index === 0 ||
                     new Date(
-                      messages[index - 1].created_at,
+                      chat.messages[index - 1].created_at,
                     ).toLocaleDateString() !==
                       new Date(m.created_at).toLocaleDateString()) && (
                     <div className="trace-date-divider">
@@ -376,75 +750,127 @@ export function Social({
                     </div>
                   )}
                   <div
-                    key={m.id}
                     className={
                       "bubble " + (m.sender_id === userId ? "mine" : "")
                     }
                   >
                     {m.body}
                     <small>
-                      {new Date(m.created_at).toLocaleTimeString("ru-RU", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      <time dateTime={m.created_at}>
+                        {new Date(m.created_at).toLocaleTimeString("ru-RU", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </time>
+                      {m.sender_id === userId && (
+                        <Check size={11} aria-label="Отправлено" />
+                      )}
                     </small>
                   </div>
                 </div>
               ))}
-              <div ref={end} />
             </div>
-            <form
-              className="composer"
-              onSubmit={async (e) => {
-                e.preventDefault();
-                if (busy || !text.trim()) return;
-                setBusy(true);
-                try {
-                  if (
-                    !draft.current ||
-                    draft.current.body !== text.trim() ||
-                    draft.current.conversation_id !== active.id
-                  )
-                    draft.current = {
-                      id: crypto.randomUUID(),
-                      body: text.trim(),
-                      conversation_id: active.id,
-                    };
-                  const message = await sendMessage({
-                    ...draft.current,
-                    sender_id: userId,
-                  });
-                  if (currentConversation.current !== message.conversation_id)
-                    return;
-                  setMessages((current) => mergeMessages(current, [message]));
-                  draft.current = null;
-                  setText("");
-                  near.current = true;
-                } catch (e) {
-                  run(() => Promise.reject(e));
-                } finally {
-                  setBusy(false);
-                }
-              }}
-            >
-              <textarea
-                aria-label="Сообщение"
-                placeholder="Напишите сообщение…"
-                maxLength={8000}
-                value={text}
-                disabled={busy}
-                onChange={(e) => setText(e.target.value)}
-                required
-              />
-              <button className="primary" disabled={busy}>
-                {busy ? "Отправка…" : "Отправить"}
-              </button>
-            </form>
+            <div className="composer-area">
+              {sendError && (
+                <div className="social-error" role="alert">
+                  {sendError}
+                  <button disabled={busy} onClick={() => void submit()}>
+                    Повторить отправку
+                  </button>
+                </div>
+              )}
+              {canSend ? (
+                <form
+                  ref={composer}
+                  className="composer"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void submit();
+                  }}
+                >
+                  <textarea
+                    aria-label="Сообщение"
+                    placeholder="Напишите сообщение…"
+                    maxLength={8000}
+                    value={text}
+                    disabled={busy}
+                    onChange={(e) => setText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (
+                        e.key === "Enter" &&
+                        !e.shiftKey &&
+                        !e.nativeEvent.isComposing &&
+                        matchMedia("(min-width:761px)").matches
+                      ) {
+                        e.preventDefault();
+                        composer.current?.requestSubmit();
+                      }
+                    }}
+                    required
+                  />
+                  <button
+                    className="primary"
+                    aria-label={busy ? "Отправка…" : "Отправить"}
+                    disabled={busy || !text.trim()}
+                  >
+                    {busy ? (
+                      <LoaderCircle size={17} className="is-spinning" />
+                    ) : (
+                      <Send size={17} />
+                    )}
+                    <span>{busy ? "Отправка…" : "Отправить"}</span>
+                  </button>
+                </form>
+              ) : (
+                <div className="chat-readonly">
+                  <ShieldCheck size={18} />
+                  <p>
+                    История сохранена. Для новых сообщений добавьте собеседника
+                    в друзья.
+                  </p>
+                  <button onClick={showPeople}>Открыть людей</button>
+                </div>
+              )}
+              <div className="composer-footnote">
+                <ShieldCheck size={12} />
+                <span>Переписка доступна только её участникам</span>
+                <small>Enter — отправить · Shift+Enter — новая строка</small>
+              </div>
+            </div>
           </>
         ) : (
-          <Empty title="Разговор начинается здесь">
-            Выберите друга или переписку.
-          </Empty>
+          <div className="chat-empty">
+            <div className="chat-empty-art">
+              <span>
+                <MessageCircle size={43} />
+              </span>
+              <i>
+                <Users size={18} />
+              </i>
+              <b>
+                <Plus size={15} />
+              </b>
+            </div>
+            <span className="eyebrow">ПРОСТРАНСТВО ДЛЯ ДИАЛОГА</span>
+            <h2>
+              Мысли, которыми
+              <br />
+              хочется поделиться.
+            </h2>
+            <p>
+              Обсуждайте идеи и стройте планы вместе.
+              <br />
+              Выберите переписку или найдите друга.
+            </p>
+            <button className="primary" onClick={showPeople}>
+              <UserPlus size={16} />
+              Добавить друга
+            </button>
+            <small>
+              <ShieldCheck size={13} />
+              Личные сообщения. Только для вас двоих.
+            </small>
+          </div>
         )}
       </section>
     </div>

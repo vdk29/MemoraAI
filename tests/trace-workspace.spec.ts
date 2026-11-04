@@ -19,7 +19,7 @@ const test = base.extend({
       await context.close();
       if (testInfo.status === testInfo.expectedStatus)
         await video?.saveAs(
-          `video-assets/clips/trace-interactions-${width}-fixture.webm`,
+          `video-assets/clips/trace-depth-interactions-${width}-fixture.webm`,
         );
     }
   },
@@ -140,7 +140,7 @@ for (const width of [1440, 390])
     await expect(editor.getByLabel("Обложка заметки")).toHaveValue("memory");
     await expect(editor).toHaveClass(/trace-spatial/);
     await page.screenshot({
-      path: `video-assets/after/trace-cover-editor-${width}-fixture.png`,
+      path: `video-assets/after/trace-depth-cover-editor-${width}-fixture.png`,
       fullPage: true,
     });
     await editor.getByLabel("Обложка заметки").selectOption("");
@@ -157,7 +157,7 @@ for (const width of [1440, 390])
     ).toBeVisible();
     expect(searched).toBe("Глубокая");
     await page.screenshot({
-      path: `video-assets/after/trace-command-${width}-fixture.png`,
+      path: `video-assets/after/trace-depth-command-${width}-fixture.png`,
       fullPage: true,
     });
     await palette.getByRole("textbox").press("Enter");
